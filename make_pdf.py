@@ -16,10 +16,11 @@ from glob import glob
 from datetime import datetime
 
 from iatv.iatv import _make_ts_from_clips
+from util import extract_datetime, extract_program_name
 
 
 # initialize markdown file
-write_f = open('2012-debate-cycle.md', 'w')
+write_f = open('2012-debate-cycle-test.md', 'w')
 
 # make document title
 write_f.write('% 2012 Debate Cycle Coverage\n')
@@ -52,30 +53,11 @@ solr_dates = [
     for day in range(1, 32)
 ]
 
-#: extract datetime from filename; returns datetime.datetime
-re_dt = re.compile(r'^.*(201210\d{2}_\d{6}).*$')
-
-
-def extract_datetime(fname):
-
-    m = re.match(re_dt, fname)
-
-    return datetime.strptime(m.groups()[0], '%Y%m%d_%H%M%S')
-
-#: regex for extracting show name
-re_name = re.compile('^.*201210\d{2}_\d{6}_(.*).cc5.srt$')
-
-
-def extract_program_name(fname):
-
-    m = re.match(re_name, fname)
-
-    return ' '.join(m.groups()[0].split('_'))
 
 # now write the transcripts for cable news coverage
 write_f.write('# Cable News Coverage\n\n')
 
-for d in solr_dates:
+for d in solr_dates[:10]:
 
     shows_date = datetime.strptime(d, '%Y%m%d')
 
