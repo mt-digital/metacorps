@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>metacorps</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/js/bootstrap.min.js" integrity="sha384-BLiI7JTZm+JWlgKa0M0kGRpJbF2J8q+qreVrKBC47e3K6BW78kGLrCkeRX6I9RoK" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="container">
+    <h1><i>metacorps</i></h1>
+    <h2>Tools for critical metaphor analysis over corpora</h2>
+    <a href="/projects/{{project['id']}}"><i>back to project view</i></a>
+
+    <hr>
+
+    <h3>{{ project['name']}}</h3>
+    <h4>Facet: {{ facet['word'] }}</h4>
+
+    <br>
+
+    {% for inst in facet_instances %}
+
+      <br>
+      <!-- XXX Set an anchor here! XXX -->
+      <h5>Instance {{loop.index}}
+        (<a href="{{url_for('edit_instance', project_id=project['id'], facet_id=facet['id'], instance_id=inst['id'])}}">edit</a>)</h5>
+      <p><b>Context:</b> {{inst['context']}} </p>
+      <p><b>Conceptual metaphor:</b> {{inst['conceptual_metaphor']}}</p>
+      <p><b>Object(s):</b> {{inst['object(s)']}}</p>
+      <p><b>Subject(s):</b> {{inst['subject(s)']}}</p>
+      <p><b>Notes:</b> {{inst['notes']}}</p>
+      <p><b>Active/Passive:</b> active</p>
+      {% if not loop.last %}
+      <hr>
+      <br>
+      {% endif %}
+    {% endfor %}
+  </div>
+</body>
+</html>
