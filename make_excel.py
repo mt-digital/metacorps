@@ -28,7 +28,7 @@ from collections import OrderedDict
 from glob import glob
 from pandas import DataFrame, ExcelWriter
 
-from iatv.iatv import _make_ts_from_clips
+from iatv.iatv import _make_ts_from_srt
 
 g = glob('data/iatv-2012-debate-cycle/*201210*')
 
@@ -80,7 +80,7 @@ for f in bar(g):
 
         processed_id_tuples.append(current_id_tuple)
 
-        ts = _make_ts_from_clips(open(f).read())
+        ts = _make_ts_from_srt(open(f).read())
 
         for l in ts:
             for w in words:
