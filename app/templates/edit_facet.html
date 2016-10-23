@@ -26,11 +26,12 @@
 
         <form action="{{url_for('edit_instance', project_id=project['id'], facet_word=facet['word'], instance_idx=instance_idx)}}"
               method="POST">
+          {{ form.csrf_token }}
             <div class="row">
-              Firgurative (check for yes)?  {{ form.figurative(value='n') }}
+              Firgurative (check for yes)?  {{ form.figurative() }}
             </div>
             <div class="row">
-              Include (check for yes)?  {{ form.include(value='n') }}
+              Include (check for yes)?  {{ form.include() }}
             </div>
             <div class="row">
               {{ form.conceptual_metaphor.label }}: {{ form.conceptual_metaphor(size=100) }}
@@ -45,7 +46,7 @@
               {{ form.active_passive.label }}: {{ form.active_passive(size=100) }}
             </div>
             <div class="row">
-              {{ form.notes(rows='10', cols='120') }}
+              {{ form.description(rows='10', cols='120') }}
             </div>
             <div class="row">
               <input type="submit" value="Save">

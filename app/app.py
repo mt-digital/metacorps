@@ -44,7 +44,7 @@ def facet(project_id, facet_word):
                            project=project, facet=facet)
 
 
-@app.route('/projects/<project_id>/facets/<facet_word>/instances/<int:instance_idx>')
+@app.route('/projects/<project_id>/facets/<facet_word>/instances/<int:instance_idx>', methods=['GET', 'POST'])
 def edit_instance(project_id, facet_word, instance_idx):
 
     project = models.IatvProject.objects.get(pk=project_id)
@@ -53,17 +53,46 @@ def edit_instance(project_id, facet_word, instance_idx):
     instance = facet.instances[instance_idx]
 
     form = EditInstanceForm(
+        figurative=instance['figurative'],
+        include=instance['include'],
         conceptual_metaphor=instance['conceptual_metaphor'],
         objects=instance['objects'],
         subjects=instance['subjects'],
         active_passive=instance['active_passive'],
-        notes=instance['description']
+        description=instance['description']
     )
 
     if form.validate_on_submit():
-        pass
+        print(form.figurative.data)
+        print(form.include.data)
+        print(form.conceptual_metaphor.data)
+
+        cm = form.conceptual_metaphor.data
+        fig = form.figurative.data
+        inc = form.include.data
+        obj = form.objects.data
+        subj = form.subjects.data
+        ap = form.active_passive.data
+        desc = form.description.data
+
+        if not fig or (cm != '' and fig != '' and obj != '' and subj != '' and
+                       ap != '' and desc != ''):
+            instance['completed'] = True
+
+        instance['conceptual_metaphor'] = cm
+        instance['figurative'] = fig
+        instance['include'] = inc
+        instance['objects'] = obj
+        instance['subjects'] = subj
+        instance['active_passive'] = ap
+        instance['description'] = desc
+
+        res = instance.save()
+        print(res)
+
     else:
-        pass
+        print('not valid')
+        print(form)
 
     return render_template('edit_facet.html', form=form,
                            project=project, facet=facet,
@@ -78,4 +107,4 @@ class EditInstanceForm(FlaskForm):
     objects = TextField(u'Object(s)')
     subjects = TextField(u'Subject(s)')
     active_passive = TextField(u'Active or passive')
-    notes = TextAreaField(u'Notes')
+    description = TextAreaField(u'Description')
