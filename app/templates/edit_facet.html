@@ -10,17 +10,28 @@
     <div class="container">
         <h1><i>metacorps</i></h1>
         <h2>Tools for critical metaphor analysis over corpora</h2>
-        <a href="/projects/{{project['id']}}"><i>back to project view</i></a>
+        <a href="{{url_for('facet', project_id=project['id'], facet_word=facet['word'])}}"><i>back to facet view</i></a>
 
         <hr>
 
-        <h3>{{ project['name']}}</h3>
+        <h3>Project: {{ project['name']}}</h3>
         <h4>Facet: {{ facet['word'] }}</h4>
 
         <br>
 
-        <form action="{{url_for('edit_instance', project_id=project['id'], facet_id=facet['id'], instance_id=instance['id'])}}"
+        <h5>Text:</h5>
+        <p>
+        {{ instance['text'].replace(facet['word'], '<b>' + facet['word'].upper()+ '</b>') | safe }}
+        </p>
+
+        <form action="{{url_for('edit_instance', project_id=project['id'], facet_word=facet['word'], instance_idx=instance_idx)}}"
               method="POST">
+            <div class="row">
+              Firgurative (check for yes)?  {{ form.figurative(value='n') }}
+            </div>
+            <div class="row">
+              Include (check for yes)?  {{ form.include(value='n') }}
+            </div>
             <div class="row">
               {{ form.conceptual_metaphor.label }}: {{ form.conceptual_metaphor(size=100) }}
             </div>
@@ -40,7 +51,7 @@
               <input type="submit" value="Save">
             </div>
         </form>
-
     </div>
+    <br>
 </body>
 </html>

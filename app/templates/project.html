@@ -24,19 +24,19 @@
                 <tr>
                     <th>Facet</th>
                     <th>Total instances</th>
-                    <th>Needing review</th>
+                    <th>Number reviewed</th>
                 </tr>
             </thead>
             <tbody>
                     {% for facet in facets %}
                         <tr>
                             <td>
-                                <a href="/projects/{{project['id']}}/facets/{{facet['id']}}">
+                                <a href="/projects/{{project['id']}}/facets/{{facet['word']}}">
                                     {{facet['word']}}
                                 </a>
                             </td>
-                            <td>{{facet['total']}}</td>
-                            <td>{{facet['need_review']}}</td>
+                            <td>{{facet['total_count']}}</td>
+                            <td>{{facet['number_reviewed']}}</td>
                         </tr>
                     {% endfor %}
                 <!-- <tr> -->
