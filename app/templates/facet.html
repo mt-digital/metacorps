@@ -23,8 +23,10 @@
 
       <br>
       <!-- XXX Set an anchor here! XXX -->
+      <a name="{{loop.index}}"></a>
       <h5>Instance {{loop.index}}
-        (<a href="{{url_for('edit_instance', project_id=project['id'], facet_word=facet['word'], instance_idx=loop.index0)}}">edit</a>)</h5>
+
+        <i><a href="{{url_for('edit_instance', project_id=project['id'], facet_word=facet['word'], instance_idx=loop.index0)}}">edit</a></i></h5>
       <p><b>Context:</b> {{ inst['text'].replace(facet['word'].strip().upper(), '<b style="color:red;font-size:16pt">' + facet['word'].lower()+ '</b>') | safe }} </p>
       <p><b>Figurative?</b> {{inst['figurative']}}     <b>Include?</b> {{inst['include']}}</p>
       <p><b>Conceptual metaphor:</b> {{inst['conceptual_metaphor']}}</p>
