@@ -11,11 +11,14 @@
         <h1><i>metacorps</i></h1>
         <h2>Tools for critical metaphor analysis over corpora</h2>
         <a href="{{url_for('facet', project_id=project['id'], facet_word=facet['word'])}}#{{instance_idx|string}}"><i>back to facet view</i></a>
-
+        |
+        <i><a href="{{url_for('edit_instance', project_id=project['id'], facet_word=facet['word'], instance_idx=instance_idx-1)}}">previous instance</a></i>
+        |
+        <i><a href="{{url_for('edit_instance', project_id=project['id'], facet_word=facet['word'], instance_idx=instance_idx+1)}}">next instance</a></i>
         <hr>
 
         <h3>Project: {{ project['name']}}</h3>
-        <h4>Facet: {{ facet['word'] }}</h4>
+        <h4>Facet: {{ facet['word'] }}; Instance {{instance_idx}}/{{total_instances}}</h4>
 
         <br>
 
@@ -49,7 +52,7 @@
               {{ form.description(rows='10', cols='120') }}
             </div>
             <div class="row">
-              <input type="submit" value="Save">
+              <input type="submit" value="Save and next">
             </div>
         </form>
     </div>

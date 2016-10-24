@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import TextField, TextAreaField, BooleanField
 from flask_mongoengine import MongoEngine
@@ -51,6 +51,7 @@ def edit_instance(project_id, facet_word, instance_idx):
     facet = [f for f in project.facets if facet_word == f['word']][0]
 
     instance = facet.instances[instance_idx]
+    total_instances = len(facet.instances)
 
     form = EditInstanceForm(
         figurative=instance['figurative'],
@@ -63,9 +64,6 @@ def edit_instance(project_id, facet_word, instance_idx):
     )
 
     if form.validate_on_submit():
-        print(form.figurative.data)
-        print(form.include.data)
-        print(form.conceptual_metaphor.data)
 
         cm = form.conceptual_metaphor.data
         fig = form.figurative.data
@@ -87,16 +85,19 @@ def edit_instance(project_id, facet_word, instance_idx):
         instance['active_passive'] = ap
         instance['description'] = desc
 
-        res = instance.save()
-        print(res)
+        instance.save()
 
-    else:
-        print('not valid')
-        print(form)
+        next_url = url_for(
+                'edit_instance', project_id=project_id, facet_word=facet_word,
+                instance_idx=instance_idx+1
+            )
+
+        return redirect(next_url)
 
     return render_template('edit_facet.html', form=form,
                            project=project, facet=facet,
-                           instance_idx=instance_idx, instance=instance)
+                           instance_idx=instance_idx, instance=instance,
+                           total_instances=total_instances)
 
 
 class EditInstanceForm(FlaskForm):
