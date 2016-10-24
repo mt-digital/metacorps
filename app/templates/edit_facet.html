@@ -21,7 +21,7 @@
 
         <h5>Text:</h5>
         <p>
-        {{ instance['text'].replace(facet['word'], '<b>' + facet['word'].upper()+ '</b>') | safe }}
+        {{ instance['text'].replace(facet['word'].strip().upper(), '<b style="color:red;font-size:16pt">' + facet['word'].lower()+ '</b>') | safe }}
         </p>
 
         <form action="{{url_for('edit_instance', project_id=project['id'], facet_word=facet['word'], instance_idx=instance_idx)}}"

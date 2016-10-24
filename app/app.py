@@ -19,14 +19,14 @@ from app import models
 
 @app.route('/')
 def hello():
-    projects = models.IatvProject.objects
+    projects = models.Project.objects
     return render_template('index.html', projects=projects)
 
 
 @app.route('/projects/<project_id>')
 def project(project_id):
 
-    project = models.IatvProject.objects.get(pk=project_id)
+    project = models.Project.objects.get(pk=project_id)
     facets = project.facets
 
     return render_template('project.html',
@@ -37,7 +37,7 @@ def project(project_id):
 @app.route('/projects/<project_id>/facets/<facet_word>')
 def facet(project_id, facet_word):
 
-    project = models.IatvProject.objects.get(pk=project_id)
+    project = models.Project.objects.get(pk=project_id)
     facet = [f for f in project.facets if facet_word == f['word']][0]
 
     return render_template('facet.html',
@@ -47,7 +47,7 @@ def facet(project_id, facet_word):
 @app.route('/projects/<project_id>/facets/<facet_word>/instances/<int:instance_idx>', methods=['GET', 'POST'])
 def edit_instance(project_id, facet_word, instance_idx):
 
-    project = models.IatvProject.objects.get(pk=project_id)
+    project = models.Project.objects.get(pk=project_id)
     facet = [f for f in project.facets if facet_word == f['word']][0]
 
     instance = facet.instances[instance_idx]

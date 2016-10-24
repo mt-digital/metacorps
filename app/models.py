@@ -6,19 +6,19 @@ from datetime import datetime
 class IatvDocument(db.Document):
 
     document_data = db.StringField(required=True)
-    air_datetime = db.DateTimeField()
+    raw_srt = db.StringField(required=True)
+    iatv_id = db.StringField(required=True)
+    iatv_url = db.URLField(required=True)
+
     network = db.StringField()
     program_name = db.StringField()
-    raw_srt = db.StringField(required=True)
 
-    meta = {
-        'indexes': [
-            {
-                'fields': ['$document_data'],
-                'default_language': 'english'
-            }
-        ]
-    }
+    # somewhat redundant in case localtime is missing or other issues
+    start_localtime = db.DateTimeField()
+    start_time = db.DateTimeField()
+    stop_time = db.DateTimeField()
+    runtime_seconds = db.FloatField()
+    utc_offset = db.StringField()
 
 
 class IatvCorpus(db.Document):
@@ -32,8 +32,8 @@ class Instance(db.EmbeddedDocument):
     text = db.StringField(required=True)
     source_id = db.ObjectIdField(required=True)
 
-    figurative = db.BooleanField()
-    include = db.BooleanField(default=True)
+    figurative = db.BooleanField(default=False)
+    include = db.BooleanField(default=False)
 
     conceptual_metaphor = db.StringField(default='')
     objects = db.StringField(default='')
@@ -52,10 +52,12 @@ class Facet(db.EmbeddedDocument):
     number_reviewed = db.IntField(default=0)
 
 
-class IatvProject(db.Document):
+# class IatvProject(db.Document):
+class Project(db.Document):
 
-    corpus = db.ReferenceField(IatvCorpus)
-    name = db.StringField()
+    name = db.StringField(required=True)
+
+    # corpus = db.ReferenceField(IatvCorpus)
     created = db.DateTimeField(default=datetime.now)
     facets = db.ListField(db.EmbeddedDocumentField(Facet))
     last_modified = db.DateTimeField(default=datetime.now)
