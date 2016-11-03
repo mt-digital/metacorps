@@ -26,6 +26,10 @@
       <a name="{{loop.index}}"></a>
       <h5>Instance {{loop.index}}
 
+        <p>{{iatv_documents[loop.index0].program_name}}; {{iatv_documents[loop.index0].network}}</p>
+        <p>Published {{iatv_documents[loop.index0].start_localtime}}</p>
+        <p><a href="{{iatv_documents[loop.index0].iatv_url}}">Source on IATV</a></p>
+
         <i><a href="{{url_for('edit_instance', project_id=project['id'], facet_word=facet['word'], instance_idx=loop.index0)}}">edit</a></i></h5>
       <p><b>Context:</b> {{ inst['text'].replace(facet['word'].strip().upper(), '<b style="color:red;font-size:16pt">' + facet['word'].lower()+ '</b>') | safe }} </p>
       <p style="font-size:18pt"><b>Figurative?</b> {{inst['figurative']}}  |   <b>Include?</b> {{inst['include']}}</p>

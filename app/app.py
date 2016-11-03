@@ -39,9 +39,14 @@ def facet(project_id, facet_word):
 
     project = models.Project.objects.get(pk=project_id)
     facet = [f for f in project.facets if facet_word == f['word']][0]
+    iatv_documents = [
+        models.IatvDocument.objects.get(pk=instance.source_id)
+        for instance in facet.instances
+    ]
 
     return render_template('facet.html',
-                           project=project, facet=facet)
+                           project=project, facet=facet,
+                           iatv_documents=iatv_documents)
 
 
 @app.route('/projects/<project_id>/facets/<facet_word>/instances/<int:instance_idx>', methods=['GET', 'POST'])
@@ -52,6 +57,8 @@ def edit_instance(project_id, facet_word, instance_idx):
 
     instance = facet.instances[instance_idx]
     total_instances = len(facet.instances)
+
+    source_doc = models.IatvDocument.objects.get(pk=instance.source_id)
 
     form = EditInstanceForm(
         figurative=instance['figurative'],
@@ -73,9 +80,9 @@ def edit_instance(project_id, facet_word, instance_idx):
         ap = form.active_passive.data
         desc = form.description.data
 
-        if not fig or (cm != '' and fig != '' and obj != '' and subj != '' and
-                       ap != '' and desc != ''):
-            instance['completed'] = True
+        # if not fig or (cm != '' and fig != '' and obj != '' and subj != '' and
+        #                ap != '' and desc != ''):
+        #     instance['completed'] = True
 
         instance['conceptual_metaphor'] = cm
         instance['figurative'] = fig
@@ -97,6 +104,7 @@ def edit_instance(project_id, facet_word, instance_idx):
     return render_template('edit_facet.html', form=form,
                            project=project, facet=facet,
                            instance_idx=instance_idx, instance=instance,
+                           source_doc=source_doc,
                            total_instances=total_instances)
 
 

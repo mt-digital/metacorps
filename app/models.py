@@ -41,7 +41,9 @@ class Instance(db.EmbeddedDocument):
     active_passive = db.StringField(default='')
     description = db.StringField(default='')
 
-    completed = db.BooleanField(default=False)
+    reviewed = db.BooleanField(default=False)
+
+    reference_url = db.URLField()
 
 
 class Facet(db.EmbeddedDocument):

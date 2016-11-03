@@ -92,7 +92,8 @@ def make_project(project_name, documents, word_regex_pairs):
 
                     if wr_pair[1] in line:
                         facet.instances.append(
-                            Instance(text=line, source_id=doc.id)
+                            Instance(text=line, source_id=doc.id,
+                                     reference_url=doc.iatv_url)
                         )
 
         facet.total_count = len(facet.instances)
