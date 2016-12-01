@@ -127,39 +127,41 @@ def _import_iatv_blob(_dir):
     metadata = json.loads(md_str)
 
     iatv_id = metadata['identifier']
-    iatv_url = metadata['identifier-access'][0]
 
-    try:
-        start_localtime = _mdtime_to_datetime(metadata['start_localtime'][0])
-        start_time = _mdtime_to_datetime(metadata['start_time'][0])
-        stop_time = _mdtime_to_datetime(metadata['stop_time'][0])
+    if len(IatvDocument.objects(iatv_id=iatv_id)) == 0:
+        iatv_url = metadata['identifier-access'][0]
 
-        runtime_seconds = (stop_time - start_time).seconds
-        utc_offset = metadata['utc_offset'][0]
+        try:
+            start_localtime = _mdtime_to_datetime(metadata['start_localtime'][0])
+            start_time = _mdtime_to_datetime(metadata['start_time'][0])
+            stop_time = _mdtime_to_datetime(metadata['stop_time'][0])
 
-    except Exception as e:
-        print('Error accessing dates for directory ' + _dir)
-        print('Exception:\n' + e.message)
+            runtime_seconds = (stop_time - start_time).seconds
+            utc_offset = metadata['utc_offset'][0]
 
-    title = metadata['title']
-    tspl = title.split(':')
+        except Exception as e:
+            print('Error accessing dates for directory ' + _dir)
+            print('Exception:\n' + e.message)
 
-    program_name = tspl[0].strip()
-    network = tspl[1].strip()
+        title = metadata['title']
+        tspl = title.split(':')
 
-    # now read text and SRT files
-    text = open(opjoin(_dir, 'transcript.txt')).read()
+        program_name = tspl[0].strip()
+        network = tspl[1].strip()
 
-    srt_path = opjoin(_dir, iatv_id + '.cc5.srt')
-    raw_srt = open(srt_path, 'r').read()
-    doc = IatvDocument(document_data=text, raw_srt=raw_srt,
-                       iatv_id=iatv_id, iatv_url=iatv_url,
-                       start_localtime=start_localtime, start_time=start_time,
-                       stop_time=stop_time, runtime_seconds=runtime_seconds,
-                       utc_offset=utc_offset, program_name=program_name,
-                       network=network)
+        # now read text and SRT files
+        text = open(opjoin(_dir, 'transcript.txt')).read()
 
-    doc.save()
+        srt_path = opjoin(_dir, iatv_id + '.cc5.srt')
+        raw_srt = open(srt_path, 'r').read()
+        doc = IatvDocument(document_data=text, raw_srt=raw_srt,
+                           iatv_id=iatv_id, iatv_url=iatv_url,
+                           start_localtime=start_localtime, start_time=start_time,
+                           stop_time=stop_time, runtime_seconds=runtime_seconds,
+                           utc_offset=utc_offset, program_name=program_name,
+                           network=network)
+
+        doc.save()
 
 
 def _mdtime_to_datetime(mdtime):

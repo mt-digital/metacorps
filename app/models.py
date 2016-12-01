@@ -2,6 +2,8 @@ from .app import db
 
 from datetime import datetime
 
+from iatv import Show, DOWNLOAD_BASE_URL
+
 
 class IatvDocument(db.Document):
 
