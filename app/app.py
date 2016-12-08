@@ -1,9 +1,12 @@
+import os
 import re
 
 from datetime import time
 from flask import Flask, render_template, redirect, url_for
 from flask_mongoengine import MongoEngine
-from flask_security import MongoEngineUserDatastore, Security, login_required, logout_user
+from flask_security import (
+    MongoEngineUserDatastore, Security, login_required, logout_user
+)
 from flask_wtf import FlaskForm
 from numpy import unique
 from wtforms import TextField, TextAreaField, BooleanField
@@ -12,14 +15,7 @@ from iatv import DOWNLOAD_BASE_URL
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = 'super-secret'
-
-app.config.update(
-    dict(
-        SECRET_KEY='dev key',
-        MONGODB_SETTINGS={'db': 'metacorps'}
-    )
-)
+app.config.from_envvar('CONFIG_FILE')
 
 db = MongoEngine(app)
 
@@ -27,10 +23,6 @@ from app import models
 
 user_datastore = MongoEngineUserDatastore(db, models.User, models.Role)
 security = Security(app, user_datastore)
-
-@app.before_first_request
-def create_user():
-    user_datastore.create_user(email='mt@yo.org', password='password')
 
 
 @app.route('/logout')
