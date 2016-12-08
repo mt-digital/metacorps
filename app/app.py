@@ -3,6 +3,7 @@ import re
 from datetime import time
 from flask import Flask, render_template, redirect, url_for
 from flask_mongoengine import MongoEngine
+from flask_security import MongoEngineUserDatastore, Security, login_required, logout_user
 from flask_wtf import FlaskForm
 from numpy import unique
 from wtforms import TextField, TextAreaField, BooleanField
@@ -10,6 +11,8 @@ from wtforms import TextField, TextAreaField, BooleanField
 from iatv import DOWNLOAD_BASE_URL
 
 app = Flask(__name__)
+
+app.config['SECRET_KEY'] = 'super-secret'
 
 app.config.update(
     dict(
@@ -22,14 +25,30 @@ db = MongoEngine(app)
 
 from app import models
 
+user_datastore = MongoEngineUserDatastore(db, models.User, models.Role)
+security = Security(app, user_datastore)
+
+@app.before_first_request
+def create_user():
+    user_datastore.create_user(email='mt@yo.org', password='password')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect('/')
+
 
 @app.route('/')
+@login_required
 def hello():
     projects = models.Project.objects
     return render_template('index.html', projects=projects)
 
 
 @app.route('/projects/<project_id>')
+@login_required
 def project(project_id):
 
     project = models.Project.objects.get(pk=project_id)
@@ -41,6 +60,7 @@ def project(project_id):
 
 
 @app.route('/projects/<project_id>/facets/<facet_word>')
+@login_required
 def facet(project_id, facet_word):
 
     project = models.Project.objects.get(pk=project_id)
@@ -56,6 +76,7 @@ def facet(project_id, facet_word):
 
 
 @app.route('/projects/<project_id>/facets/<facet_word>/instances/<int:instance_idx>', methods=['GET', 'POST'])
+@login_required
 def edit_instance(project_id, facet_word, instance_idx):
 
     project = models.Project.objects.get(pk=project_id)
