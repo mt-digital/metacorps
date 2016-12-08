@@ -2,8 +2,6 @@ from .app import db
 
 from datetime import datetime
 
-from iatv import Show, DOWNLOAD_BASE_URL
-
 
 class IatvDocument(db.Document):
 
@@ -48,7 +46,7 @@ class Instance(db.EmbeddedDocument):
     reference_url = db.URLField()
 
 
-class Facet(db.EmbeddedDocument):
+class Facet(db.Document):
 
     instances = db.ListField(db.EmbeddedDocumentField(Instance))
     word = db.StringField()
@@ -63,5 +61,5 @@ class Project(db.Document):
 
     # corpus = db.ReferenceField(IatvCorpus)
     created = db.DateTimeField(default=datetime.now)
-    facets = db.ListField(db.EmbeddedDocumentField(Facet))
+    facets = db.ListField(db.ReferenceField(Facet))
     last_modified = db.DateTimeField(default=datetime.now)

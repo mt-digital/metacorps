@@ -17,6 +17,17 @@ from os.path import join as opjoin
 from app.models import IatvDocument, IatvCorpus, Instance, Facet, Project
 
 
+DEFAULT_VIOLENCE_LIST = [
+    ('hit', ' HIT '), ('attack', 'ATTACK'), ('beat', 'BEAT'),
+    ('knock', ' KNOCK'), ('punch', ' PUNCH'), ('blood', 'BLOOD'),
+    ('struck', 'STRUCK'), ('strike', 'STRIKE'), ('in the ring', 'IN THE RING'),
+    ('slap', 'SLAP'), ('blow', 'BLOW'), ('jugular', 'JUGULAR'),
+    ('slaughter', 'SLAUGHTER'), ('battle', 'BATTLE'), ('grenade', 'GRENADE'),
+    ('bomb', 'BOMB'), ('slug', 'SLUG'), ('smack', 'SMACK'),
+    ('strangle', 'STRANGL')
+]
+
+
 DEFAULT_DEBATE_PROGRAMS = [
     'Piers Morgan Tonight', 'Anderson Cooper 360', 'The O\'Reilly Factor',
     'Hannity', 'Hardball With Chris Matthews', 'The Rachel Maddow Show'
@@ -97,6 +108,7 @@ def make_project(project_name, documents, word_regex_pairs):
                         )
 
         facet.total_count = len(facet.instances)
+        facet.save()
 
         project.facets.append(facet)
 
