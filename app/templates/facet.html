@@ -34,9 +34,10 @@
       <p><b>Context:</b> {{ inst['text'].replace(facet['word'].strip().upper(), '<b style="color:red;font-size:16pt">' + facet['word'].lower()+ '</b>') | safe }} </p>
       <p style="font-size:18pt"><b>Figurative?</b> {{inst['figurative']}}  |   <b>Include?</b> {{inst['include']}}</p>
       <p><b>Conceptual metaphor:</b> {{inst['conceptual_metaphor']}}</p>
-      <p><b>Object(s):</b> {{inst['objects']}}</p>
       <p><b>Subject(s):</b> {{inst['subjects']}}</p>
+      <p><b>Object(s):</b> {{inst['objects']}}</p>
       <p><b>Description:</b> {{inst['description']}}</p>
+      <p><b>Tense:</b> {{inst['tense']}}</p>
       <p><b>Active/Passive:</b> {{inst['active_passive']}}</p>
       {% if not loop.last %}
       <hr>

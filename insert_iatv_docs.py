@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 Insert documents from folder into the iatv_documents
 collection in the metacorps database. That database is set by Flask
@@ -24,7 +25,7 @@ DEFAULT_VIOLENCE_LIST = [
     ('slap', 'SLAP'), ('blow', 'BLOW'), ('jugular', 'JUGULAR'),
     ('slaughter', 'SLAUGHTER'), ('battle', 'BATTLE'), ('grenade', 'GRENADE'),
     ('bomb', 'BOMB'), ('slug', 'SLUG'), ('smack', 'SMACK'),
-    ('strangle', 'STRANGL')
+    ('fire', 'FIRE'), ('firing', 'FIRING'), ('strangle', 'STRANGL')
 ]
 
 

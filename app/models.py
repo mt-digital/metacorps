@@ -40,6 +40,7 @@ class Instance(db.EmbeddedDocument):
     objects = db.StringField(default='')
     subjects = db.StringField(default='')
     active_passive = db.StringField(default='')
+    tense = db.StringField(default='')
     description = db.StringField(default='')
 
     reviewed = db.BooleanField(default=False)
