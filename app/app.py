@@ -11,18 +11,18 @@ from flask_wtf import FlaskForm
 from numpy import unique
 from wtforms import TextField, TextAreaField, BooleanField
 
-from iatv import DOWNLOAD_BASE_URL
-
 app = Flask(__name__)
 
 app.config.from_envvar('CONFIG_FILE')
 
 db = MongoEngine(app)
 
-from app import models
+import models
 
 user_datastore = MongoEngineUserDatastore(db, models.User, models.Role)
 security = Security(app, user_datastore)
+
+DOWNLOAD_BASE_URL = 'https://archive.org/download/'
 
 
 @app.route('/logout')

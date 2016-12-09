@@ -2,3 +2,4 @@ data
 2012-debate-cycle.*
 venv
 app/default.cfg
+*.pyc
