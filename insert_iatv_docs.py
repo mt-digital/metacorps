@@ -9,7 +9,6 @@ After the documents are inserted then various corpora can be made from
 those documents either interactively or with another script/function
 '''
 import json
-import re
 
 from datetime import datetime
 from glob import glob
@@ -36,7 +35,7 @@ DEFAULT_DEBATE_PROGRAMS = [
 
 
 def build_iatv_corpus(start_datetime, stop_datetime,
-                      corpus_name, program_names=DEFAULT_DEBATE_PROGRAMS):
+                      corpus_name, program_names=None):
     '''
     Build corpus for a given year and a set of networks.
 
@@ -51,10 +50,17 @@ def build_iatv_corpus(start_datetime, stop_datetime,
     Returns:
         (IatvCorpus): Newly created corpus
     '''
-    corpus_docs = IatvDocument.objects(
-        program_name__in=program_names, start_localtime__gte=start_datetime,
-        start_localtime__lte=stop_datetime
-    )
+    if program_names is None:
+        corpus_docs = IatvDocument.objects(
+            start_localtime__gte=start_datetime,
+            start_localtime__lte=stop_datetime
+        )
+    else:
+        corpus_docs = IatvDocument.objects(
+            program_name__in=program_names,
+            start_localtime__gte=start_datetime,
+            start_localtime__lte=stop_datetime
+        )
 
     corpus = IatvCorpus(name=corpus_name, documents=corpus_docs)
 
