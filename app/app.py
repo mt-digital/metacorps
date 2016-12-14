@@ -5,9 +5,11 @@ from datetime import time
 from flask import Flask, render_template, redirect, url_for
 from flask_mongoengine import MongoEngine
 from flask_security import (
-    MongoEngineUserDatastore, Security, login_required, logout_user
+    MongoEngineUserDatastore, Security, login_required, logout_user,
+    current_user
 )
 from flask_wtf import FlaskForm
+from wtforms import validators
 from numpy import unique
 from wtforms import TextField, TextAreaField, BooleanField, RadioField
 
@@ -32,11 +34,28 @@ def logout():
     return redirect('/')
 
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 @login_required
 def hello():
     projects = models.Project.objects
-    return render_template('index.html', projects=projects)
+    log = models.Log.objects[:10]
+
+    form = LogForm()
+
+    if form.validate_on_submit():
+        new_log = models.Log()
+        new_log.user_email = current_user.email
+        new_log.message = form.message.data
+
+        new_log.save()
+
+        return redirect('/')
+
+    return render_template('index.html', projects=projects, log=log, form=form)
+
+
+class LogForm(FlaskForm):
+    message = TextAreaField(u'Log Entry:', [validators.DataRequired()])
 
 
 @app.route('/projects/<project_id>')

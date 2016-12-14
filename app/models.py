@@ -78,3 +78,9 @@ class User(db.Document, UserMixin):
     active = db.BooleanField(default=True)
     confirmed_at = db.DateTimeField()
     roles = db.ListField(db.ReferenceField(Role), default=[])
+
+
+class Log(db.Document):
+    time_posted = db.DateTimeField(default=datetime.now)
+    user_email = db.StringField()
+    message = db.StringField()
