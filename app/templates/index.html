@@ -28,31 +28,31 @@
         </ol>
     </div>
     <div class="container">
-      <h2>Add new log entry</h2>
+      <h2 style="text-decoration:underline">Log</h2>
+      <h4>Add new log entry</h4>
       <form action="/" method="POST">
         {{ form.csrf_token }}
 
-        <div class="row">
-          {{ form.message.label }}
-        </div>
         <div class="row">
           {{ form.message(rows='5', cols='80') }}
         </div>
         <div class="row"><input type="submit" value="Save"></div>
       </form>
     </div>
-
+    <br>
     <div class="container">
-      <h2>Log</h2>
       {% for log_entry in log %}
         <div class="row">
-          <h3>
+          <h5>
             {{ log_entry.time_posted }}
-          </h3>
-          <h4>
+          </h5>
+          <h5>
             {{ log_entry.user_email }}
-          </h4>
+          </h5>
           <div>{{ log_entry.message }}</div>
+          {% if not loop.last %}
+            <hr>
+          {% endif %}
         </div>
       {% endfor %}
     </div>

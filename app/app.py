@@ -38,7 +38,8 @@ def logout():
 @login_required
 def hello():
     projects = models.Project.objects
-    log = models.Log.objects[:10]
+    log = list(models.Log.objects)[-10:]
+    log.reverse()
 
     form = LogForm()
 
