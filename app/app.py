@@ -105,6 +105,7 @@ def edit_instance(project_id, facet_word, instance_idx):
         conceptual_metaphor=instance['conceptual_metaphor'],
         objects=instance['objects'],
         subjects=instance['subjects'],
+        tense=instance['tense'],
         active_passive=instance['active_passive'],
         description=instance['description']
     )
