@@ -10,11 +10,16 @@ those documents either interactively or with another script/function
 '''
 import json
 
+from collections import Counter
 from datetime import datetime
 from glob import glob
+from nltk.corpus import stopwords
 from os.path import join as opjoin
 
 from app.models import IatvDocument, IatvCorpus, Instance, Facet, Project
+
+
+STOPWORDS = set(stopwords.words('english'))
 
 
 DEFAULT_VIOLENCE_LIST = [
@@ -175,12 +180,38 @@ def _import_iatv_blob(_dir):
         raw_srt = open(srt_path, 'r').read()
         doc = IatvDocument(document_data=text, raw_srt=raw_srt,
                            iatv_id=iatv_id, iatv_url=iatv_url,
-                           start_localtime=start_localtime, start_time=start_time,
-                           stop_time=stop_time, runtime_seconds=runtime_seconds,
-                           utc_offset=utc_offset, program_name=program_name,
+                           start_localtime=start_localtime,
+                           start_time=start_time,
+                           stop_time=stop_time,
+                           runtime_seconds=runtime_seconds,
+                           utc_offset=utc_offset,
+                           program_name=program_name,
                            network=network)
 
         doc.save()
+
+
+def calculate_counts(docs):
+    '''
+    Make word count for list of documents
+    '''
+    texts = [[word for word in doc['document_data'].lower().split()
+              if word.isalpha() and word not in STOPWORDS]
+             for doc in docs]
+
+    c = Counter([])
+    for t in texts:
+        c.update(t)
+
+    texts = [[word for word in doc['document_data'].lower().split()
+              if c[word] >= 10]
+             for doc in docs]
+
+    c = Counter([])
+    for t in texts:
+        c.update(t)
+
+    return (texts, c)
 
 
 def _mdtime_to_datetime(mdtime):
