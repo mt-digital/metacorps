@@ -1,8 +1,4 @@
-import os
-import re
-
-from datetime import time
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, jsonify
 from flask_mongoengine import MongoEngine
 from flask_security import (
     MongoEngineUserDatastore, Security, login_required, logout_user,
@@ -10,7 +6,6 @@ from flask_security import (
 )
 from flask_wtf import FlaskForm
 from wtforms import validators
-from numpy import unique
 from wtforms import TextField, TextAreaField, BooleanField, RadioField
 
 app = Flask(__name__)
@@ -20,6 +15,7 @@ app.config.from_envvar('CONFIG_FILE')
 db = MongoEngine(app)
 
 from . import models
+
 
 user_datastore = MongoEngineUserDatastore(db, models.User, models.Role)
 security = Security(app, user_datastore)
@@ -121,10 +117,6 @@ def edit_instance(project_id, facet_word, instance_idx):
         ap = form.active_passive.data
         desc = form.description.data
 
-        # if not fig or (cm != '' and fig != '' and obj != '' and subj != '' and
-        #                ap != '' and desc != ''):
-        #     instance['completed'] = True
-
         instance['conceptual_metaphor'] = cm
         instance['figurative'] = fig
         instance['include'] = inc
@@ -137,7 +129,7 @@ def edit_instance(project_id, facet_word, instance_idx):
         instance.save()
 
         next_url = url_for(
-                'edit_instance', project_id=project_id, facet_word=facet_word,
+               'edit_instance', project_id=project_id, facet_word=facet_word,
                 instance_idx=instance_idx+1
             )
 
@@ -148,6 +140,27 @@ def edit_instance(project_id, facet_word, instance_idx):
                            instance_idx=instance_idx, instance=instance,
                            source_doc=source_doc,
                            total_instances=total_instances)
+
+
+@app.route('/all_conceptual_metaphors', methods=['GET'])
+def get_conceptual_metaphors():
+    '''
+    Get conceptual metaphors used across all projects. Can set up separate
+    route later for more refined requests if necessary.
+    '''
+
+    facets = [facet
+              for project in models.Project.objects
+              for facet in project.facets]
+
+    instances = [instance for facet in facets for instance in facet.instances]
+
+    conceptual_metaphors = list(set(
+        i['conceptual_metaphor'].lower().strip() for i in instances
+        if i['conceptual_metaphor'] != ''
+    ))
+
+    return jsonify({'conceptual_metaphors': conceptual_metaphors})
 
 
 class EditInstanceForm(FlaskForm):
