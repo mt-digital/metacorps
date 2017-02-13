@@ -17,6 +17,23 @@ db = MongoEngine(app)
 from . import models
 
 
+def previously_used_cm():
+    facets = [facet
+              for project in models.Project.objects
+              for facet in project.facets]
+
+    instances = [instance for facet in facets for instance in facet.instances]
+
+    conceptual_metaphors = list(set(
+        i['conceptual_metaphor'].lower().strip() for i in instances
+        if i['conceptual_metaphor'] != ''
+    ))
+
+    return conceptual_metaphors
+
+
+PREVIOUSLY_USED_CM = previously_used_cm()
+
 user_datastore = MongoEngineUserDatastore(db, models.User, models.Role)
 security = Security(app, user_datastore)
 
@@ -108,7 +125,7 @@ def edit_instance(project_id, facet_word, instance_idx):
 
     if form.validate_on_submit():
 
-        cm = form.conceptual_metaphor.data
+        cm = form.conceptual_metaphor.data.lower().strip()
         fig = form.figurative.data
         inc = form.include.data
         obj = form.objects.data
@@ -128,6 +145,9 @@ def edit_instance(project_id, facet_word, instance_idx):
 
         instance.save()
 
+        if cm not in PREVIOUSLY_USED_CM:
+            PREVIOUSLY_USED_CM.append(cm)
+
         next_url = url_for(
                'edit_instance', project_id=project_id, facet_word=facet_word,
                 instance_idx=instance_idx+1
@@ -135,7 +155,7 @@ def edit_instance(project_id, facet_word, instance_idx):
 
         return redirect(next_url)
 
-    return render_template('edit_facet.html', form=form,
+    return render_template('edit_instance.html', form=form,
                            project=project, facet=facet,
                            instance_idx=instance_idx, instance=instance,
                            source_doc=source_doc,
@@ -149,18 +169,7 @@ def get_conceptual_metaphors():
     route later for more refined requests if necessary.
     '''
 
-    facets = [facet
-              for project in models.Project.objects
-              for facet in project.facets]
-
-    instances = [instance for facet in facets for instance in facet.instances]
-
-    conceptual_metaphors = list(set(
-        i['conceptual_metaphor'].lower().strip() for i in instances
-        if i['conceptual_metaphor'] != ''
-    ))
-
-    return jsonify({'conceptual_metaphors': conceptual_metaphors})
+    return jsonify({'conceptual_metaphors': PREVIOUSLY_USED_CM})
 
 
 class EditInstanceForm(FlaskForm):

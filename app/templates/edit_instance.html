@@ -47,7 +47,8 @@
               Include (check for yes)?  {{ form.include() }}
             </div>
             <div class="row">
-              {{ form.conceptual_metaphor.label }}: {{ form.conceptual_metaphor(size=100) }}
+              {{ form.conceptual_metaphor.label }}: {{ form.conceptual_metaphor(size=60) }}
+              Previously used: <select id="cm_dropdown" name="cm_dropdown"></select>
             </div>
             <div class="row">
               {{ form.subjects.label }}: {{ form.subjects(size=100) }}
@@ -76,5 +77,6 @@
         </form>
     </div>
     <br>
+    <script src="/static/js/conceptual_metaphor.js"></script>
 </body>
 </html>
