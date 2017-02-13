@@ -1,3 +1,3 @@
 from app import app
 
-import models
+from . import models

@@ -1,7 +1,13 @@
+import requests
+import numpy as np
+import os
+
 from datetime import datetime
 from flask_security import UserMixin, RoleMixin
 
 from .app import db
+
+DOWNLOAD_BASE_URL = 'https://archive.org/download/'
 
 
 class IatvDocument(db.Document):
@@ -20,6 +26,25 @@ class IatvDocument(db.Document):
     stop_time = db.DateTimeField()
     runtime_seconds = db.FloatField()
     utc_offset = db.StringField()
+
+    def download_video(self, download_dir):
+
+        segments = int(np.ceil(self.runtime_seconds / 60.0))
+
+        for i in range(segments):
+            start_time = i * 60
+            stop_time = (i + 1) * 60
+            download_url = DOWNLOAD_BASE_URL + self.iatv_id + '/' +\
+                self.iatv_id + '.mp4?t=' + str(start_time) + '/' +\
+                str(stop_time) + '&exact=1&ignore=x.mp4'
+
+            res = requests.get(download_url)
+
+            download_path = os.path.join(
+                download_dir, '{}_{}.mp4'.format(self.iatv_id, i))
+
+            with open(download_path, 'wb') as handle:
+                handle.write(res.content)
 
 
 class IatvCorpus(db.Document):

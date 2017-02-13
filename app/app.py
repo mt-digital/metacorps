@@ -19,7 +19,7 @@ app.config.from_envvar('CONFIG_FILE')
 
 db = MongoEngine(app)
 
-import models
+from . import models
 
 user_datastore = MongoEngineUserDatastore(db, models.User, models.Role)
 security = Security(app, user_datastore)
