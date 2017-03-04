@@ -11,6 +11,7 @@ Author: Matthew Turner
 Date: February 27, 2017
 '''
 import csv
+import pandas as pd
 
 from app.models import Project, IatvDocument
 
@@ -49,6 +50,9 @@ class ProjectExporter:
             for instance in facet.instances
             if instance.include
         )
+        self.column_names =\
+            IATV_DOCUMENT_COLUMNS + ['facet_word'] + INSTANCE_COLUMNS
+
 
     def _keyed_instances(self):
 
@@ -61,16 +65,20 @@ class ProjectExporter:
             csvwriter = csv.writer(f)
 
             csvwriter.writerow(
-                IATV_DOCUMENT_COLUMNS +
-                ['facet_word'] +
-                INSTANCE_COLUMNS
+                self.colunm_names
             )
 
             for inst in self._keyed_instances():
                 csvwriter.writerow(_format_row(inst))
 
     def export_dataframe(self):
-        pass
+
+        df = pd.DataFrame(columns=self.column_names)
+
+        for idx, inst in enumerate(self._keyed_instances()):
+            df.loc[idx] = _format_row(inst)
+
+        return df
 
 
 def _lookup_iatv_doc(instance):
