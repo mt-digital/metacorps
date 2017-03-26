@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
 
 from collections import OrderedDict
@@ -20,6 +22,7 @@ DEFAULT_DATE_RANGES = OrderedDict([
     ('Election to End of November (November 9 12:00 AM - November 30)',
         (dt(2016, 11, 9), dt(2016, 11, 30, 11, 59, 59)))
 ])
+
 
 
 COLUMNS_IN_ORDER = [
@@ -114,7 +117,7 @@ class Analyzer:
 
         plt.tight_layout()
 
-    def network_daily_timeseries(self):
+    def network_daily_timeseries(self, facets=None):
         """
         Create a timeseries for every network with each column a facet.
 
@@ -323,7 +326,36 @@ def _count_daily_instances(df):
     ret_df.columns = ['counts']
     ret_df.reset_index(inplace=True)
 
+    return _full_counts_pivot(ret_df).resample('D').sum()
+
+
+def _full_counts_pivot(
+            counts_df,
+            date_range=pd.date_range('2016-09-01 00:00:00',
+                                     '2016-11-30 23:59:59',
+                                     freq='H'),
+        ):
+
+    columns = [
+        (['FOXNEWSW']*3 + ['MSNBCW']*3 + ['CNNW']*3),
+        ['hit', 'attack', 'beat']*3
+    ]
+
+    ret_df = pd.DataFrame(index=date_range, columns=columns)
+    ret_df[:] = 0
+
+    for col_pair in ret_df.columns.tolist():
+
+        cur_cdf = counts_df[(counts_df.network == col_pair[0]) &
+                            (counts_df.facet_word == col_pair[1])
+                            ]
+
+        ret_df.loc[
+            cur_cdf.start_localtime, col_pair
+        ] = np.array(cur_cdf.counts)
+
     return ret_df
+#     return ret_df
 
 
 def _select_range_and_pivot_daily_counts(date_range, df, data_method):
