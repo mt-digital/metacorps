@@ -10,7 +10,7 @@
 </head>
 <body>
     <div class="container">
-        <h1><i>metacorps</i></h1>
+        <h1><i><a href="/">metacorps</a></i></h1>
         <h2>Tools for critical metaphor analysis over corpora</h2>
         <a href="{{url_for('facet', project_id=project['id'], facet_word=facet['word'])}}#{{instance_idx|string}}"><i>back to facet view</i></a>
         {% if instance_idx > 0 %}
@@ -74,7 +74,7 @@
               {{ form.description(rows='10', cols='120') }}
             </div>
             <div class="row">
-              <input type="submit" value="Save and next">
+              <input type="submit" value="Save">
             </div>
         </form>
     </div>

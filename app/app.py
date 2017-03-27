@@ -130,7 +130,7 @@ def edit_instance(project_id, facet_word, instance_idx):
         inc = form.include.data
         obj = form.objects.data
         subj = form.subjects.data
-        t = form.tense.data
+
         ap = form.active_passive.data
         desc = form.description.data
 
@@ -139,7 +139,13 @@ def edit_instance(project_id, facet_word, instance_idx):
         instance['include'] = inc
         instance['objects'] = obj
         instance['subjects'] = subj
-        instance['tense'] = t
+
+        try:
+            t = form.tense.data
+            instance['tense'] = t
+        except:
+            instance['tense'] = ''
+
         instance['active_passive'] = ap
         instance['description'] = desc
 
@@ -184,5 +190,6 @@ class EditInstanceForm(FlaskForm):
         u'Tense',
         choices=[('past', 'Past'),
                  ('present', 'Present'),
-                 ('future', 'Future')])
+                 ('future', 'Future')],
+        validators=None)
     description = TextAreaField(u'Description')
