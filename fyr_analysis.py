@@ -1,0 +1,91 @@
+'''
+
+Author: Matthew Turner <maturner01@gmail.com>
+
+Date: April 01, 2017
+'''
+import numpy as np
+import pandas as pd
+
+from datetime import date
+from rpy2.robjects.packages import importr
+
+
+glmer = importr('lme4').glmer
+extractAIC = importr('stats').extractAIC
+
+
+DEFAULT_FIRST_DATES = [
+    date(2016, 9, d) for d in range(20, 31)
+] + [
+    date(2016, 10, d) for d in range(1, 15)
+]
+
+
+DEFAULT_SECOND_DATES = [
+    date(2016, 10, d) for d in range(15, 32)
+] + [
+    date(2016, 11, d) for d in range(1, 30)
+]
+
+
+def partition_AICs(df,
+                   first_dates=DEFAULT_FIRST_DATES,
+                   second_dates=DEFAULT_SECOND_DATES,
+                   model_formula='count ~ phase + network + facet + (1|date)'
+                   ):
+    '''
+    Given a dataframe with columns "date", "network", "facet", and "count"
+    '''
+    d = {'first_date': [], 'second_date': [], 'AIC': []}
+
+    for fd in first_dates:
+        for sd in second_dates:
+
+            d['first_date'].append(fd)
+            d['second_date'].append(sd)
+
+            print('Calculating for d1={} & d2={}'.format(fd, sd))
+
+            phase_df = add_phases(df, fd, sd)
+
+            model = glmer(
+                model_formula,
+                family='poisson',
+                data=phase_df
+            )
+
+            d['AIC'].append(extractAIC(model)[1])
+
+    return pd.DataFrame(d)
+
+
+def add_phases(df,
+               date1=date(2016, 9, 26),
+               date2=date(2016, 10, 20)
+               ):
+    '''
+
+    '''
+
+    phase = []
+    ret = df.copy()
+
+    for i, d in enumerate([d.date() for d in df.date]):
+
+        if date1 > d:
+            phase.append(1)
+
+        elif date1 <= d and d < date2:
+            phase.append(2)
+
+        else:
+            phase.append(3)
+
+    ret['phase'] = phase
+
+    return ret
+
+
+def relative_likelihood(aic_min, aic_other):
+    return np.exp((aic_min - aic_other)/2.0)
