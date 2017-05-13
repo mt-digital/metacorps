@@ -3,10 +3,11 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from datetime import datetime
 
 from export_project_csv import ProjectExporter
+from app.models import IatvCorpus
 
 dt = datetime
 
@@ -314,10 +315,61 @@ def _plot_facets_by_dateranges(nfc, date_ranges, data_method):
     legend.get_frame().set_linewidth(1.5)
 
 
+def _frequency_per_day(
+            df, iatv_corpus=IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
+        ):
+    '''
+    Arguments:
+
+        df (pandas.DataFrame): counts dataframe returned from
+            _count_daily_instances
+
+    Returns:
+        (pd.Series)
+
+    '''
+    docs = iatv_corpus.documents
+
+    # get all date/show name tuples & remove show re-runs from the same date
+    prog_dates = set(
+        [(d.program_name, d.start_localtime.date()) for d in docs]
+    )
+
+    # count total number of shows on each date
+    shows_per_date = Counter(el[1] for el in prog_dates)
+
+    # create series of shows per date
+    spd_series = pd.Series(
+        index=list(shows_per_date.keys()), data=list(shows_per_date.values())
+    )
+
+    total_instances_per_day = df.sum(axis=1)
+    frequency = total_instances_per_day / spd_series
+
+    return frequency.dropna()
+
+
+def _frequency_per_day_noidx(
+            df, iatv_corpus=IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
+        ):
+
+    fpd = _frequency_per_day(df, iatv_corpus)
+    fpd_noidx = fpd.reset_index()
+    fpd_noidx.columns = ['date', 'frequency']
+
+    return fpd_noidx
+
 def _count_daily_instances(df):
     """
 
     """
+    ret_df = _pre_pivot_counts(df)
+
+    return _full_counts_pivot(ret_df).resample('D').sum()
+
+
+def _pre_pivot_counts(df):
+
     subs = df[['start_localtime', 'network', 'facet_word']]
 
     c = subs.groupby(['start_localtime', 'network', 'facet_word']).size()
@@ -326,7 +378,7 @@ def _count_daily_instances(df):
     ret_df.columns = ['counts']
     ret_df.reset_index(inplace=True)
 
-    return _full_counts_pivot(ret_df).resample('D').sum()
+    return ret_df
 
 
 def _full_counts_pivot(

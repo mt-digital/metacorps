@@ -10,8 +10,15 @@ import pandas as pd
 from datetime import date
 from rpy2.robjects.packages import importr
 
+from rpy2 import robjects as ro
+from rpy2.robjects import pandas2ri
+pandas2ri.activate()
+R = ro.r
 
-glmer = importr('lme4').glmer
+
+# glmer = importr('lme4').glmer
+lme = importr('lme4').lmer
+lm = R.lm
 extractAIC = importr('stats').extractAIC
 
 
@@ -49,9 +56,9 @@ def partition_AICs(df,
 
             phase_df = add_phases(df, fd, sd)
 
-            model = glmer(
+            model = lm(
                 model_formula,
-                family='poisson',
+                # family='poisson',
                 data=phase_df
             )
 
@@ -74,15 +81,18 @@ def add_phases(df,
     for i, d in enumerate([d.date() for d in df.date]):
 
         if date1 > d:
-            phase.append(1)
+            # phase.append(1)
+            phase.append('ground')
 
         elif date1 <= d and d < date2:
-            phase.append(2)
+            # phase.append(2)
+            phase.append('elevated')
 
         else:
-            phase.append(3)
+            # phase.append(3)
+            phase.append('ground')
 
-    ret['phase'] = phase
+    ret['state'] = phase
 
     return ret
 
