@@ -115,6 +115,7 @@ def edit_instance(project_id, facet_word, instance_idx):
     form = EditInstanceForm(
         figurative=instance['figurative'],
         include=instance['include'],
+        spoken_by=instance['spoken_by'],
         conceptual_metaphor=instance['conceptual_metaphor'],
         objects=instance['objects'],
         subjects=instance['subjects'],
@@ -128,12 +129,14 @@ def edit_instance(project_id, facet_word, instance_idx):
         cm = form.conceptual_metaphor.data.lower().strip()
         fig = form.figurative.data
         inc = form.include.data
+        sp_by = form.spoken_by.data
         obj = form.objects.data
         subj = form.subjects.data
 
         ap = form.active_passive.data
         desc = form.description.data
 
+        instance['spoken_by'] = sp_by
         instance['conceptual_metaphor'] = cm
         instance['figurative'] = fig
         instance['include'] = inc
@@ -186,6 +189,7 @@ class EditInstanceForm(FlaskForm):
     objects = TextField(u'Object(s)')
     subjects = TextField(u'Subject(s)')
     active_passive = TextField(u'Active or passive')
+    spoken_by = TextField(u'Spoken by')
     tense = RadioField(
         u'Tense',
         choices=[('past', 'Past'),

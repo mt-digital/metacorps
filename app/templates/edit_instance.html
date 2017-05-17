@@ -59,6 +59,9 @@
               {{ form.objects.label }}: {{ form.objects(size=100) }}
             </div>
             <div class="row">
+              {{ form.spoken_by.label }}: {{ form.spoken_by(size=60) }}
+            </div>
+            <div class="row">
               {{form.tense.label}}:
               {% for subfield in form.tense %}
                   <tr>
