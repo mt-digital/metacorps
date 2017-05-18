@@ -1,4 +1,6 @@
-from flask import Flask, render_template, redirect, url_for, jsonify
+import json
+
+from flask import Flask, render_template, redirect, url_for, jsonify, request
 from flask_mongoengine import MongoEngine
 from flask_security import (
     MongoEngineUserDatastore, Security, login_required, logout_user,
@@ -98,6 +100,45 @@ def facet(project_id, facet_word):
     return render_template('facet.html',
                            project=project, facet=facet,
                            iatv_documents=iatv_documents)
+
+
+@app.route('/api/projects/<project_id>/facets/<facet_word>/instances/<int:instance_idx>',
+           methods=['GET', 'POST'])
+@login_required
+def api_update_instance(project_id, facet_word, instance_idx):
+
+    project = models.Project.objects.get(pk=project_id)
+    facet = [f for f in project.facets if facet_word == f['word']][0]
+
+    instance = facet.instances[instance_idx]
+
+    if request.method == 'POST':
+
+        data = request.form
+        print(data['figurative'])
+        print(data)
+
+
+        try:
+            instance.figurative = data['figurative'] == 'True'
+            instance.include = data['include'] == 'True'
+            instance.spoken_by = data['spoken_by']
+            instance.conceptual_metaphor = data['conceptual_metaphor']
+            instance.objects = data['objects']
+            instance.subjects = data['subjects']
+            instance.description = data['description']
+            instance.tense = data['tense']
+            instance.active_passive = data['active_passive']
+            instance.save()
+
+        except Exception as e:
+            print(e)
+
+    try:
+        return jsonify(json.loads(instance.to_json()))
+    except:
+        print(e.message)
+        return jsonify(json.loads(instance.to_json()))
 
 
 @app.route('/projects/<project_id>/facets/<facet_word>/instances/<int:instance_idx>', methods=['GET', 'POST'])
