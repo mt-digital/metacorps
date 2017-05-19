@@ -27,6 +27,15 @@ class Instance(db.EmbeddedDocument):
     description = db.StringField(default='')
     spoken_by = db.StringField(default='')
 
+    # Has this particular quote been coded already?
+    repeat = db.BooleanField(default=False)
+    # If so, what is the index of the instance in the facet?
+    repeat_index = db.IntField()
+
+    # Is this a re-run (repeat of exact same episode)?
+    # If so, it should be excluded, but mark to keep track
+    rerun = db.BooleanField(default=False)
+
     reviewed = db.BooleanField(default=False)
 
     reference_url = db.URLField()

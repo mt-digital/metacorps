@@ -115,9 +115,6 @@ def api_update_instance(project_id, facet_word, instance_idx):
     if request.method == 'POST':
 
         data = request.form
-        print(data['figurative'])
-        print(data)
-
 
         try:
             instance.figurative = data['figurative'] == 'True'
@@ -129,16 +126,17 @@ def api_update_instance(project_id, facet_word, instance_idx):
             instance.description = data['description']
             instance.tense = data['tense']
             instance.active_passive = data['active_passive']
+            instance.repeat = data['repeat'] == 'True'
+            ri = data['repeat_index']
+            if ri != '' and ri is not None:
+                instance.repeat_index = int(ri)
+            instance.rerun = data['rerun'] == 'True'
             instance.save()
 
         except Exception as e:
             print(e)
 
-    try:
-        return jsonify(json.loads(instance.to_json()))
-    except:
-        print(e.message)
-        return jsonify(json.loads(instance.to_json()))
+    return jsonify(json.loads(instance.to_json()))
 
 
 @app.route('/projects/<project_id>/facets/<facet_word>/instances/<int:instance_idx>', methods=['GET', 'POST'])
