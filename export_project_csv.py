@@ -28,6 +28,7 @@ IATV_DOCUMENT_COLUMNS = [
 
 INSTANCE_COLUMNS = [
     'conceptual_metaphor',
+    'spoken_by',
     'subjects',
     'objects',
     'active_passive',
@@ -51,8 +52,9 @@ class ProjectExporter:
             if instance.include
         )
         self.column_names =\
-            IATV_DOCUMENT_COLUMNS + ['facet_word'] + INSTANCE_COLUMNS
-
+            IATV_DOCUMENT_COLUMNS + \
+            ['facet_word'] + \
+            INSTANCE_COLUMNS
 
     def _keyed_instances(self):
 
@@ -86,10 +88,10 @@ def _lookup_iatv_doc(instance):
 
 
 def _format_row(instance):
-        iatv_doc = _lookup_iatv_doc(instance[1])
-        facet_word = instance[0]
-        return [iatv_doc[field] for field in IATV_DOCUMENT_COLUMNS] +\
-            [facet_word] + [instance[1][field] for field in INSTANCE_COLUMNS]
+    iatv_doc = _lookup_iatv_doc(instance[1])
+    facet_word = instance[0]
+    return [iatv_doc[field] for field in IATV_DOCUMENT_COLUMNS] +\
+        [facet_word] + [instance[1][field] for field in INSTANCE_COLUMNS]
 
 
 def main(project_name, export_path):

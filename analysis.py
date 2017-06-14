@@ -40,19 +40,23 @@ COLUMNS_IN_ORDER = [
 ]
 
 
-def get_analyzer(year):
+def get_analyzer(project_name):
     '''
     Convenience method for creating a newly initialized instance of the
     Analyzer class. Currently the only argument is year since the projects all
     contain a year. In the future we may want to match some other unique
     element of a title, or create some other kind of wrapper to search
     all Project names in the metacorps database.
+
+    Arguments:
+        project_name (str): name of project to be exported to an Analyzer
+            with DataFrame representation included as an attribute
     '''
-    if type(year) is int:
-        year = str(year)
+    if type(project_name) is int:
+        project_name = str('Viomet Sep-Nov ' + project_name)
 
     return Analyzer(
-        ProjectExporter('Viomet Sep-Nov ' + year).export_dataframe()
+        ProjectExporter(project_name).export_dataframe()
     )
 
 

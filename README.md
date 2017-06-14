@@ -7,7 +7,41 @@ will be made more general so diverse sources can be used. If you would like
 to analyze [Internet Archive Cable News](http://archive.org/tv/details) data,
 you can use my [iatv](http://github.com/mtpain/iatv) python package.
 
-## Loading IATV data into metacorps
+
+## Loading IATV data into metacorps from IATV search results
+
+The ``Project`` class in [app/models.py](tree/master/app/models.py) provides a 
+class method to ingest IATV search results into a project. See the example
+below.
+
+```python
+from iatv import search_items
+from app.models import Project
+
+# following archive.org query format (see https://blog.archive.org/developers/)
+econ_query = 'strangle+economy'
+regulation_query = 'strangle+regulation'
+time = '20151101-20170603'
+
+# 2000 rows just to hopefully get all results; len(items) should be inspected
+econ_items = search_items(query=query, time=time, rows=2000)
+regulation_items = search_items(query=query, time=time, rows=2000)
+
+# Provide facet names, and items for each facet in first argument.
+# Second argument is the name of the project.
+new_project = Project.from_search_results(
+        {
+            'strangle+economy': econ_items,
+            'strangle+regulation': regulation_items
+        },
+        'Strangle instances'
+    )
+
+# sync project to MongoDB
+new_project.save()
+```
+
+## Loading IATV data into metacorps from file system blobs
 
 The follwing instructions assume you have downloaded transcripts 
 from the TV News Archive using `iatv`, which looks something like this,
