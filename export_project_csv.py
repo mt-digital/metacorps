@@ -23,7 +23,7 @@ IATV_DOCUMENT_COLUMNS = [
     'runtime_seconds',
     'network',
     'program_name',
-    'iatv_id'
+    'iatv_id',
 ]
 
 INSTANCE_COLUMNS = [
@@ -32,7 +32,10 @@ INSTANCE_COLUMNS = [
     'subjects',
     'objects',
     'active_passive',
-    'tense'
+    'text',
+    'tense',
+    'repeat',
+    'repeat_index'
 ]
 
 
