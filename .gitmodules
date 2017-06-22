@@ -1,0 +1,3 @@
+[submodule "iatv"]
+	path = iatv
+	url = https://github.com/mtpain/iatv.git
