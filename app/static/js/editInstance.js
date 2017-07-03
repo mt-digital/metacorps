@@ -23,48 +23,48 @@ function editInstance(instanceIndex) {
       }
 
       var filledForm = 
-        '<div class="row">Figurative (check for yes)?  <input ' + fig_checked + 
+        '<div class="row"><b>Figurative (check if yes)?</b>  <input ' + fig_checked + 
           ' id="figurative" name="figurative" type="checkbox" value="y"></div>' +
 
-        '<div class="row">Include (check for yes)?  <input ' + incl_checked + 
+        '<div class="row"><b>Include (check if yes)?</b>  <input ' + incl_checked + 
             ' id="include" name="include" type="checkbox" value="y"></div>' +
 
-        '<div class="row">Repeat quote (check if yes)?  <input ' + repeat_checked + 
+        '<div class="row"><b>Repeat quote (check if yes)?</b>  <input ' + repeat_checked + 
             ' id="repeat" name="repeat" type="checkbox" value="y"></div>' +
 
-        '<div class="row"><label for="repeat_index">Repeat Index (instance index of repeated quote)</label>: ' +
-                         '<input id="repeat_index" name="repeat_index" size="10" type="text" ' + 
+        '<div class="row"><label for="repeat_index"><b>Repeat Index</b> (instance index of repeated quote)</label>: ' +
+                         '<input class="form-control" id="repeat_index" name="repeat_index" size="10" type="text" ' + 
                          ' value="' + instanceData["repeat_index"] + '"></div>' +
 
-        '<div class="row">Episode rerun (check if yes)?  <input ' + rerun_checked + 
+        '<div class="row"><b>Episode rerun (check if yes)?</b>  <input ' + rerun_checked + 
             ' id="rerun" name="rerun" type="checkbox" value="y"></div>' +
 
-        '<div class="row"><label for="conceptual_metaphor">Conceptual metaphor</label>: ' +
-                         '<input id="conceptual_metaphor" name="conceptual_metaphor" size="60" type="text" ' + 
+        '<div class="row"><label for="conceptual_metaphor"><b>Conceptual metaphor</b></label>: ' +
+                         '<input class="form-control" id="conceptual_metaphor" name="conceptual_metaphor" size="60" type="text" ' + 
                          ' value="' + instanceData["conceptual_metaphor"] + '"></div>' + 
 
-        '<div class="row"><label for="spoken_by">Spoken by</label>: ' +
-           '<input id="spoken_by" name="spoken_by" size="60" type="text" ' + 
+        '<div class="row"><label for="spoken_by"><b>Spoken by</b></label>: ' +
+           '<input class="form-control" id="spoken_by" name="spoken_by" size="60" type="text" ' + 
            ' value="' + instanceData["spoken_by"] + '"></div>' +
 
-        '<div class="row"><label for="description">Description</label>: ' +
-           '<input id="description" name="description" size="100" type="text" ' + 
+        '<div class="row"><label for="description"><b>Description</b></label>: ' +
+           '<input class="form-control" id="description" name="description" size="100" type="text" ' + 
            ' value="' + instanceData["description"] + '"></div>' +
           
-        '<div class="row"><label for="subjects">Subject(s)</label>: ' +
-                         '<input id="subjects" name="subjects" size="60" type="text" ' + 
+        '<div class="row"><label for="subjects"><b>Subject(s)</b></label>: ' +
+                         '<input class="form-control" id="subjects" name="subjects" size="60" type="text" ' + 
                          ' value="' + instanceData["subjects"] + '"></div>' +
 
-        '<div class="row"><label for="objects">Object(s)</label>: ' +
-                         '<input id="objects" name="objects" size="60" type="text" ' + 
+        '<div class="row"><label for="objects"><b>Object(s)</b></label>: ' +
+                         '<input class="form-control" id="objects" name="objects" size="60" type="text" ' + 
                          ' value="' + instanceData["objects"] + '"></div>' +
 
-        '<div class="row"><label for="tense">Tense</label>: ' + 
-           '<input id="tense" name="tense" size="60" type="text" ' + 
+        '<div class="row"><label for="tense"><b>Tense</b></label>: ' + 
+           '<input class="form-control" id="tense" name="tense" size="60" type="text" ' + 
            ' value="' + instanceData["tense"] + '"></div>' +
 
-        '<div class="row"><label for="active_passive">Active or passive</label>: ' + 
-                         '<input id="active_passive" name="active_passive" size="60" type="text" ' + 
+        '<div class="row"><label for="active_passive"><b>Active or passive</b></label>: ' + 
+                         '<input class="form-control" id="active_passive" name="active_passive" size="60" type="text" ' + 
                          ' value="' + instanceData["active_passive"] + '"></div>';
 
         document.getElementById("details-" + instanceIndex).innerHTML = 
@@ -137,11 +137,11 @@ function freezeSaveUpdates(instanceIndex) {
 
       '<p><b>Repeat index: </b>' +  instanceData['repeat_index'] + '</p>' + 
       '<p><b>Conceptual metaphor: </b>' +  instanceData['conceptual_metaphor'] + '</p>' + 
+      '<p><b>Spoken by: </b>' + instanceData['spoken_by'] + '</p>' + 
       '<p><b>Subject(s): </b>' + instanceData['subjects'] + '</p>' + 
       '<p><b>Object(s): </b>' + instanceData['objects'] + '</p>' + 
       '<p><b>Description: </b>' + instanceData['description'] + '</p>' + 
       '<p><b>Tense: </b>' + instanceData['tense'] + '</p>' + 
-      '<p><b>Spoken by: </b>' + instanceData['spoken_by'] + '</p>' + 
       '<p><b>Active/Passive: </b>' + instanceData['active_passive'] + '</p>';
   });
 }
