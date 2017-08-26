@@ -43,6 +43,8 @@ function editInstance(instanceIndex) {
                          '<input class="form-control" id="conceptual_metaphor" name="conceptual_metaphor" size="60" type="text" ' + 
                          ' value="' + instanceData["conceptual_metaphor"] + '"></div>' + 
 
+        '<div class="row" id="testRow"><select id="cm_dropdown"></select></div>' + 
+
         '<div class="row"><label for="spoken_by"><b>Spoken by</b></label>: ' +
            '<input class="form-control" id="spoken_by" name="spoken_by" size="60" type="text" ' + 
            ' value="' + instanceData["spoken_by"] + '"></div>' +
@@ -67,6 +69,7 @@ function editInstance(instanceIndex) {
                          '<input class="form-control" id="active_passive" name="active_passive" size="60" type="text" ' + 
                          ' value="' + instanceData["active_passive"] + '"></div>';
 
+        // push built HTML form to the instance element for editing
         document.getElementById("details-" + instanceIndex).innerHTML = 
 
           filledForm + 
@@ -75,10 +78,15 @@ function editInstance(instanceIndex) {
             '" onclick="freezeSaveUpdates(' 
               + instanceIndex + 
           ')">Save Changes</a>';
-    });
+
+    populateCMDropdown();
+  });
 }
 
 
+/**
+ * Save updates to the server and disable the boxes for editing.
+ */
 function freezeSaveUpdates(instanceIndex) {
 
   var apiRoute =  '/api' + window.location.pathname +

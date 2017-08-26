@@ -8,26 +8,29 @@
 
 var cm_options = [];
 
-$.get('/all_conceptual_metaphors').done(
-  (data) => {
-    cm_options = data['conceptual_metaphors'];
-    cm_options.forEach(
-      option => {
-        $('#cm_dropdown').append(
-          '<option value=' + option + '>' + option + '</option>'
+function populateCMDropdown() {
+    $.get('/all_conceptual_metaphors').done(
+      (data) => {
+        cm_options = data['conceptual_metaphors'];
+        cm_options.forEach(
+          option => {
+            $("#cm_dropdown").append(
+              '<option value=' + option + '>' + option + '</option>'
+            );
+          }
         );
-        console.log(option);
       }
     );
-  }
-);
 
-$('#cm_dropdown').change( () => {
-  
-  // get the selected option from the dropdown
-  var selected = $('#cm_dropdown option:selected').text();
+    // listener for choosing a conceptual metaphor from the dropdown of prev used
+    $('#cm_dropdown').change( () => {
+      
+      // get the selected option from the dropdown
+      var selected = $('#cm_dropdown option:selected').text();
 
-  // put that option into the conceptual metaphor input box
-  $('#conceptual_metaphor').val(selected);
+      // put that option into the conceptual metaphor input box
+      $('#conceptual_metaphor').val(selected);
 
-});
+    });
+}
+
