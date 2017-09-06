@@ -42,7 +42,8 @@ def partition_AICs(df,
                    model_formula='count ~ phase + network + facet + (1|date)'
                    ):
     '''
-    Given a dataframe with columns "date", "network", "facet", and "count"
+    Given a dataframe with columns "date", "network", "facet", and "count",
+    generates a dataframe with the AIC of each partition date.
     '''
     d = {'first_date': [], 'second_date': [], 'AIC': []}
 
@@ -72,7 +73,7 @@ def add_phases(df,
                date2=date(2016, 10, 20)
                ):
     '''
-
+    Create a dataframe with a new 'phase' column
     '''
 
     phase = []
@@ -99,3 +100,35 @@ def add_phases(df,
 
 def relative_likelihood(aic_min, aic_other):
     return np.exp((aic_min - aic_other)/2.0)
+
+
+def _count_by_start_localtime(df,
+                              column_list=['program_name',
+                                           'network',
+                                           'facet_word']):
+    '''
+    Count the number of instances grouped by column_list. Adds a 'counts'
+    column.
+
+    Arguments:
+        df (pandas.DataFrame): Analyzer.df attribute from Analyzer class
+        column_list (list): list of columns on which to groupby then count
+
+    Returns:
+        (pandas.DataFrame) counts per start_localtime of tuples with types
+            given in column_list
+    '''
+    all_cols = ['start_localtime'] + column_list
+
+    subs = df[all_cols]
+
+    c = subs.groupby(all_cols).size()
+
+    ret_df = c.to_frame()
+    ret_df.columns = ['counts']
+    ret_df.reset_index(inplace=True)
+
+    return ret_df
+
+def count_by_timescale(timescale='D'):
+    pass

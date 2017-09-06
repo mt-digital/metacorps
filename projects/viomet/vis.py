@@ -153,8 +153,6 @@ def aic_heatmap(df, relative=False, lw=2, annot=True, lim_ticklabels=False,
 
     fig = plt.figure(figsize=(16, 9))
 
-    # text.set_font_properties(font)
-
     if relative:
         val_col = 'rl'
         fmt = '.2f'
@@ -182,9 +180,6 @@ def aic_heatmap(df, relative=False, lw=2, annot=True, lim_ticklabels=False,
         cbar.tick_params(labelsize=14)
         cbar.set_title('Relative Likelihood, $\mathcal{L}_i$\n',
                        size=18, loc='left')
-        # ax = cbar.ax
-        # text = ax.yaxis.label
-        # text.set_font_properties(font)
 
     else:
         fmt = '1.0f'

@@ -6,7 +6,7 @@ import seaborn as sns
 from collections import OrderedDict, Counter
 from datetime import datetime
 
-from export_project_csv import ProjectExporter
+from .export_project import ProjectExporter
 from app.models import IatvCorpus
 
 dt = datetime
@@ -61,13 +61,27 @@ def get_analyzer(project_name):
 
 
 class Analyzer:
+    '''
+    Wrapper for various analysis routines. Needs a properly-formatted
+    pandas DataFrame to initialize. The `get_analyzer` is the best way to
+    get a new Analyzer instance; it handles querying the database and
+    formatting the dataframe.
+    '''
 
     def __init__(self, df):
+        '''
+        Arguments:
+            df (pandas.DataFrame): properly-formatted dataframe for generating
+                a new Analyzer. See behavior of
+                ProjectExporter.export_dataframe for how to format, or just
+                use it directly.
+        '''
         self.df = df
 
     def per_network_facet_counts(self,
                                  date_ranges=DEFAULT_DATE_RANGES,
                                  data_method='daily-average'):
+        # XXX fix docstring
         """
         Arguments:
             date_ranges (dict): lookup table of date ranges and their names
@@ -130,6 +144,16 @@ class Analyzer:
 
         Returns (dict): Dictionary of timeseries as explained in description
         """
+        pass
+
+    def subject_counts(self, obj=None):
+        '''
+        Return daily frequency of subjects of metaphorical violence with
+        columns | date | subject | counts |
+
+        Believe this will require a groupby subject, then aggregate over
+        day.
+        '''
         pass
 
     def agency_counts_by_dateranges(self,
@@ -330,7 +354,6 @@ def _frequency_per_day(
 
     Returns:
         (pd.Series)
-
     '''
     docs = iatv_corpus.documents
 
@@ -353,6 +376,27 @@ def _frequency_per_day(
     return frequency.dropna()
 
 
+def shows_per_date(
+            iatv_corpus=IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
+        ):
+
+    docs = iatv_corpus.documents
+
+    # get all date/show name tuples & remove show re-runs from the same date
+    prog_dates = set(
+        [(d.program_name, d.start_localtime.date()) for d in docs]
+    )
+
+    # count total number of shows on each date
+    shows_per_date = Counter(el[1] for el in prog_dates)
+
+    spd_series = pd.Series(
+        index=list(shows_per_date.keys()), data=list(shows_per_date.values())
+    )
+
+    return spd_series
+
+
 def _frequency_per_day_noidx(
             df, iatv_corpus=IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
         ):
@@ -372,11 +416,27 @@ def _count_daily_instances(df):
     return _full_counts_pivot(ret_df).resample('D').sum()
 
 
-def _pre_pivot_counts(df):
+def _pre_pivot_counts(df,
+                      column_list=['program_name',
+                                   'network',
+                                   'facet_word']):
+    '''
+    Count the number of instances grouped by column_list. Adds a 'counts'
+    column.
 
-    subs = df[['start_localtime', 'network', 'facet_word']]
+    Arguments:
+        df (pandas.DataFrame): Analyzer.df attribute from Analyzer class
+        column_list (list): list of columns on which to groupby then count
 
-    c = subs.groupby(['start_localtime', 'network', 'facet_word']).size()
+    Returns:
+        (pandas.DataFrame) counts per start_localtime of tuples with types
+            given in column_list
+    '''
+    all_cols = ['start_localtime'] + column_list
+
+    subs = df[all_cols]
+
+    c = subs.groupby(column_list).size()
 
     ret_df = c.to_frame()
     ret_df.columns = ['counts']
