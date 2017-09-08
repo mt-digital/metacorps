@@ -1,9 +1,11 @@
 import pandas as pd
+import numpy as np
 
 from datetime import datetime
-from nose.tools import ok_, eq_
+from nose.tools import ok_
 
-from projects.common.analysis import _count_by_start_localtime
+from projects.common.analysis import _count_by_start_localtime, daily_counts
+
 
 def _gen_test_input(pn, n, fw, so):
 
@@ -62,7 +64,6 @@ def test_count_for_each_local_time():
     n = ['CNN', 'MSNBC', 'Fox News']
     fw = ['kill', 'murder', 'punch', 'attack']
     so = ['trump', 'clinton', 'obama', 'media']
-
 
     input_df = _gen_test_input(pn, n, fw, so)
 
@@ -162,3 +163,43 @@ def test_count_for_each_local_time():
                 ]
             )
         )
+
+
+def test_daily_counts():
+    '''
+    Convert an Analysis.df to be daily timeseries of network usage
+    '''
+    pn = [
+        'Tracy Morgans news hour', 'Dingbat Alley', 'iCry Sad News Time',
+        'Digging Turnips with Ethan Land', 'Good morning, middle america!'
+    ]
+    n = ['CNN', 'MSNBC', 'Fox News']
+    fw = ['kill', 'murder', 'punch', 'attack']
+    so = ['trump', 'clinton', 'obama', 'media']
+
+    input_df = _gen_test_input(pn, n, fw, so)
+
+    date_index = pd.date_range('2016-9-1', '2016-9-4', freq='D')
+    expected_network_output = pd.DataFrame(
+        index=date_index,
+        data=[
+            (2, 0, 1),
+            (0, 5, 1),
+            (0, 0, 2),
+            (0, 0, 2),
+        ],
+        columns=pd.Index(n, name='network'),
+        dtype=np.float64  # necessary to explicitly match data types
+                          # can't seem to change dtypes in pivot table
+    )
+
+    date_index = pd.date_range('2016-9-1', '2016-9-4', freq='D')
+
+    # put columns in the same order for comparison
+    network_output = daily_counts(input_df, ['network'], date_index)[n]
+
+    pd.testing.assert_frame_equal(expected_network_output, network_output)
+
+
+def test_daily_frequency():
+    assert False

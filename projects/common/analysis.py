@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sns
 
 from collections import OrderedDict, Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .export_project import ProjectExporter
 from app.models import IatvCorpus
@@ -540,3 +540,39 @@ def _count_by_start_localtime(df,
     ret_df.reset_index(inplace=True)
 
     return ret_df
+
+
+def daily_counts(df, by, date_index):
+    '''
+    Given an Analyzer.df, creates a pivot table with date_index as index. Will
+    group by the column names given in by. First deals with hourly data in
+    order to build a common index with hourly data, which is the data's
+    original format.
+
+    Arguments:
+        df (pandas.DataFrame)
+        by (list(str))
+        date_index (pandas.core.indexes.datetimes.DatetimeIndex): e.g.
+            `pd.date_range('2016-09-01', '2016-11-30', freq='D')`
+    '''
+    # get initial counts by localtime
+    counts = _count_by_start_localtime(df, column_list=by)
+
+    # add timedelta to get all hours of the last requested day
+    hourly_index = pd.date_range(
+        date_index[0], date_index[-1] + timedelta(1, -50), freq='H'
+    )
+
+    full_df = pd.DataFrame(index=hourly_index, columns=by + ['counts'],
+                           dtype=np.int32)
+
+    for r in counts.itertuples():
+        full_df.loc[r.start_localtime] = \
+            [r.__getattribute__(attr) for attr in by] + [r.counts]
+
+    full_df.counts = full_df.counts.fillna(0)
+
+    piv = pd.pivot_table(full_df, index=full_df.index, values='counts',
+                         columns=by, aggfunc=np.sum)
+
+    return piv.fillna(0).resample('D').sum()
