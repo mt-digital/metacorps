@@ -1,23 +1,11 @@
 import pandas as pd
-import numpy as np
 
 from datetime import datetime
 from nose.tools import ok_, eq_
 
-from projects.viomet.analysis import _count_by_start_localtime
+from projects.common.analysis import _count_by_start_localtime
 
-
-def test_count_for_each_local_time():
-    '''
-    testing initial groupby in _count_by_start_localtime
-    '''
-    pn = [
-        'Tracy Morgans news hour', 'Dingbat Alley', 'iCry Sad News Time',
-        'Digging Turnips with Ethan Land', 'Good morning, middle america!'
-    ]
-    n = ['CNN', 'MSNBC', 'Fox News']
-    fw = ['kill', 'murder', 'punch', 'attack']
-    so = ['trump', 'clinton', 'obama', 'media']
+def _gen_test_input(pn, n, fw, so):
 
     rows = [
         # Tracy Morgan on CNN says "kill" and "punch"
@@ -59,6 +47,24 @@ def test_count_for_each_local_time():
                      'subjects']
 
     input_df = pd.DataFrame(rows, columns=input_columns)
+
+    return input_df
+
+
+def test_count_for_each_local_time():
+    '''
+    testing initial groupby in _count_by_start_localtime
+    '''
+    pn = [
+        'Tracy Morgans news hour', 'Dingbat Alley', 'iCry Sad News Time',
+        'Digging Turnips with Ethan Land', 'Good morning, middle america!'
+    ]
+    n = ['CNN', 'MSNBC', 'Fox News']
+    fw = ['kill', 'murder', 'punch', 'attack']
+    so = ['trump', 'clinton', 'obama', 'media']
+
+
+    input_df = _gen_test_input(pn, n, fw, so)
 
     # TEST PROGRAM NAME-NETWORK GROUPINGS
 

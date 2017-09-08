@@ -407,6 +407,7 @@ def _frequency_per_day_noidx(
 
     return fpd_noidx
 
+
 def _count_daily_instances(df):
     """
 
@@ -510,3 +511,32 @@ def _select_range_and_pivot_daily_counts(date_range, df, data_method):
             ret.ix[i] = ret.ix[i] / float(days_list[i])
 
     return ret
+
+
+def _count_by_start_localtime(df,
+                              column_list=['program_name',
+                                           'network',
+                                           'facet_word']):
+    '''
+    Count the number of instances grouped by column_list. Adds a 'counts'
+    column.
+
+    Arguments:
+        df (pandas.DataFrame): Analyzer.df attribute from Analyzer class
+        column_list (list): list of columns on which to groupby then count
+
+    Returns:
+        (pandas.DataFrame) counts per start_localtime of tuples with types
+            given in column_list
+    '''
+    all_cols = ['start_localtime'] + column_list
+
+    subs = df[all_cols]
+
+    c = subs.groupby(all_cols).size()
+
+    ret_df = c.to_frame()
+    ret_df.columns = ['counts']
+    ret_df.reset_index(inplace=True)
+
+    return ret_df
