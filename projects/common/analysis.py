@@ -376,9 +376,17 @@ def _frequency_per_day(
     return frequency.dropna()
 
 
-def shows_per_date(
-            iatv_corpus  # =IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
-        ):
+def shows_per_date(iatv_corpus, by_network=False):
+    '''
+
+    Arguments:
+        iatv_corpus (app.models.IatvCorpus): Obtained, e.g., using
+            `iatv_corpus = IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')`
+
+    Returns:
+        (pandas.Series) if by_network is False, (pandas.DataFrame)
+            if by_network is true.
+    '''
 
     docs = iatv_corpus.documents
 
@@ -387,14 +395,19 @@ def shows_per_date(
         [(d.program_name, d.start_localtime.date()) for d in docs]
     )
 
-    # count total number of shows on each date
-    shows_per_date = Counter(el[1] for el in prog_dates)
+    if not by_network:
+        # count total number of shows on each date
+        shows_per_date = Counter(el[1] for el in prog_dates)
 
-    spd_series = pd.Series(
-        index=list(shows_per_date.keys()), data=list(shows_per_date.values())
-    ).sort_index()
+        spd_series = pd.Series(
+            index=list(shows_per_date.keys()),
+            data=list(shows_per_date.values())
+        ).sort_index()
 
-    return spd_series
+        return spd_series
+
+    else:
+        return pd.DataFrame(data={'MSNBCW': [], 'CNNW': [], 'FOXNEWSW': []})
 
 
 def _frequency_per_day_noidx(

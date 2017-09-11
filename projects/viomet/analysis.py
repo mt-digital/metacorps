@@ -19,7 +19,9 @@ R = ro.r
 # glmer = importr('lme4').glmer
 lme = importr('lme4').lmer
 lm = R.lm
+
 extractAIC = importr('stats').extractAIC
+coef = importr('stats').coef
 
 
 DEFAULT_FIRST_DATES = [
@@ -39,13 +41,20 @@ DEFAULT_SECOND_DATES = [
 def partition_AICs(df,
                    first_dates=DEFAULT_FIRST_DATES,
                    second_dates=DEFAULT_SECOND_DATES,
-                   model_formula='count ~ phase + network + facet + (1|date)'
+                   model_formula='count ~ phase + network + facet + (1|date)',
+                   verbose=False
                    ):
     '''
     Given a dataframe with columns "date", "network", "facet", and "count",
     generates a dataframe with the AIC of each partition date.
     '''
-    d = {'first_date': [], 'second_date': [], 'AIC': []}
+    d = {
+            'first_date': [],
+            'second_date': [],
+            'AIC': [],
+            'coef': [],
+            'model': []
+    }
 
     for fd in first_dates:
         for sd in second_dates:
@@ -53,7 +62,8 @@ def partition_AICs(df,
             d['first_date'].append(fd)
             d['second_date'].append(sd)
 
-            print('Calculating for d1={} & d2={}'.format(fd, sd))
+            if verbose:
+                print('Calculating for d1={} & d2={}'.format(fd, sd))
 
             phase_df = add_phases(df, fd, sd)
 
@@ -65,6 +75,10 @@ def partition_AICs(df,
 
             d['AIC'].append(extractAIC(model)[1])
 
+            d['coef'].append(list(coef(model)))
+
+            d['model'].append(model)
+
     return pd.DataFrame(d)
 
 
@@ -73,7 +87,7 @@ def add_phases(df,
                date2=date(2016, 10, 20)
                ):
     '''
-    Create a dataframe with a new 'phase' column
+    Create a dataframe with a new 'state' column
     '''
 
     phase = []
