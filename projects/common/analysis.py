@@ -344,7 +344,7 @@ def _plot_facets_by_dateranges(nfc, date_ranges, data_method):
 
 
 def _frequency_per_day(
-            df, iatv_corpus=IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
+            df, iatv_corpus  # iatv_corpus=IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
         ):
     '''
     Arguments:
@@ -377,7 +377,7 @@ def _frequency_per_day(
 
 
 def shows_per_date(
-            iatv_corpus=IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
+            iatv_corpus  # =IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
         ):
 
     docs = iatv_corpus.documents
@@ -392,13 +392,13 @@ def shows_per_date(
 
     spd_series = pd.Series(
         index=list(shows_per_date.keys()), data=list(shows_per_date.values())
-    )
+    ).sort_index()
 
     return spd_series
 
 
 def _frequency_per_day_noidx(
-            df, iatv_corpus=IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
+            df, iatv_corpus  # =IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')
         ):
 
     fpd = _frequency_per_day(df, iatv_corpus)

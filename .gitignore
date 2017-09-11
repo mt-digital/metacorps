@@ -3,3 +3,4 @@ data
 venv
 app/conf/default.cfg
 *.pyc
+app/conf/*.cfg

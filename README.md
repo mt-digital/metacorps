@@ -7,6 +7,49 @@ will be made more general so diverse sources can be used. If you would like
 to analyze [Internet Archive Cable News](http://archive.org/tv/details) data,
 you can use my [iatv](http://github.com/mtpain/iatv) python package.
 
+## Run the app!
+
+[metacorps.io](http://metacorps.io) is hosted and available for all. For 
+development purposes, you can run the server locally. To run the server locally,
+you need MongoDB installed and have mongod running. Google how to do this
+if you don't know. You can customize the default template
+`app/conf/default.cfg.template` or just use it directly when running locally,
+as shown below
+
+```
+export CONFIG_FILE="conf/default.cfg.template"
+```
+
+```
+export FLASK_APP="app/app.py"
+```
+
+```
+flask run --with-threads --reload
+```
+
+The first flag on the last command tell the application to accept multiple 
+connections at once, which seems to result in a better developer experience.
+The second flag tells the application to reload automatically whenever a
+source file changes. After running this visit http://localhost:5000 to 
+see the metacorps home page. If you have not initialized it with any 
+Projects there won't be any, just the user log.
+
+## tests
+
+To run tests, first edit the configuration template 
+`app/conf/default.cfg.template` by renaming it to `app/conf/test.cfg` and
+changing the contents to match the contents below. Changing the database
+will save your development database from becoming cluttered with test
+collections.
+
+```conf
+MONGODB_SETTINGS={'db': 'test-metacorps'}
+DEBUG = False
+SECRET_KEY = 'Change me or do not -- important thing is the database'
+```
+
+
 
 ## Loading IATV data into metacorps from IATV search results
 

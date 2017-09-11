@@ -4,7 +4,10 @@ import numpy as np
 from datetime import datetime
 from nose.tools import ok_
 
-from projects.common.analysis import _count_by_start_localtime, daily_counts
+from app.models import IatvCorpus
+from projects.common.analysis import (
+    _count_by_start_localtime, daily_counts  # , shows_per_date,
+)
 
 
 def _gen_test_input(pn, n, fw, so):
@@ -201,5 +204,37 @@ def test_daily_counts():
     pd.testing.assert_frame_equal(expected_network_output, network_output)
 
 
-def test_daily_frequency():
+def _setup_mongo():
+
+    test_corpus_name = 'Test ' + datetime.now().isoformat()[:-7]
+
+    ic = IatvCorpus(name=test_corpus_name)
+
+    ic.save()
+
+    return test_corpus_name
+
+
+def _teardown_mongo():
+    pass
+
+
+def test_shows_per_day():
+
+    test_iatv_corpus_name = _setup_mongo()
+
+
     assert False
+
+
+# def test_daily_frequency():
+
+#     test_corpus_name = 'Test ' + datetime.now().isoformat()[:-7]
+
+#     # create IatvCorpus entries that make sense with existing fake data
+
+#     spd = shows_per_date(iatv_corpus=IatvCorpus.objects.get(
+#             name=test_corpus_name
+#         )
+#     )
+#     assert False
