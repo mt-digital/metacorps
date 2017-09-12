@@ -376,12 +376,15 @@ def _frequency_per_day(
     return frequency.dropna()
 
 
-def shows_per_date(iatv_corpus, by_network=False):
+def shows_per_date(date_index, iatv_corpus, by_network=False):
     '''
-
     Arguments:
+        date_index (pandas.DatetimeIndex): Full index of dates covered by
+            data
         iatv_corpus (app.models.IatvCorpus): Obtained, e.g., using
             `iatv_corpus = IatvCorpus.objects.get(name='Viomet Sep-Nov 2016')`
+        by_network (bool): whether or not to do a faceted daily count
+            by network
 
     Returns:
         (pandas.Series) if by_network is False, (pandas.DataFrame)
@@ -390,24 +393,62 @@ def shows_per_date(iatv_corpus, by_network=False):
 
     docs = iatv_corpus.documents
 
-    # get all date/show name tuples & remove show re-runs from the same date
-    prog_dates = set(
-        [(d.program_name, d.start_localtime.date()) for d in docs]
-    )
+    n_dates = len(date_index)
 
     if not by_network:
+
+        # get all date/show name tuples & remove show re-runs from same date
+        prog_dates = set(
+            [
+                (d.program_name, d.start_localtime.date())
+                for d in docs
+            ]
+        )
+
         # count total number of shows on each date
+        # note we count the second entry of the tuples, which is just the
+        # date, excluding program name
         shows_per_date = Counter(el[1] for el in prog_dates)
 
         spd_series = pd.Series(
-            index=list(shows_per_date.keys()),
-            data=list(shows_per_date.values())
+            index=date_index,
+            data={'counts': np.zeros(n_dates)}
         ).sort_index()
+
+        for date in shows_per_date:
+            spd_series.loc[date] = shows_per_date[date]
 
         return spd_series
 
     else:
-        return pd.DataFrame(data={'MSNBCW': [], 'CNNW': [], 'FOXNEWSW': []})
+        # get all date/network/show name tuples
+        # & remove show re-runs from same date
+        prog_dates = set(
+            [
+                (d.program_name, d.network, d.start_localtime.date())
+                for d in docs
+            ]
+        )
+
+        # count total number of shows on each date for each network
+        # note we count the second entry of the tuples, which is just the
+        # date, excluding program name
+        shows_per_network_per_date = Counter(el[1:] for el in prog_dates)
+
+        n_dates = len(date_index)
+        spd_frame = pd.DataFrame(
+            index=date_index,
+            data={
+                'MSNBCW': np.zeros(n_dates),
+                'CNNW': np.zeros(n_dates),
+                'FOXNEWSW': np.zeros(n_dates)
+            }
+        )
+
+        for tup in shows_per_network_per_date:
+            spd_frame.loc[tup[1]][tup[0]] = shows_per_network_per_date[tup]
+
+        return spd_frame
 
 
 def _frequency_per_day_noidx(
@@ -485,7 +526,6 @@ def _full_counts_pivot(
         ] = np.array(cur_cdf.counts)
 
     return ret_df
-#     return ret_df
 
 
 def _select_range_and_pivot_daily_counts(date_range, df, data_method):

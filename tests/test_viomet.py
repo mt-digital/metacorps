@@ -4,9 +4,9 @@ import numpy as np
 from datetime import datetime
 from nose.tools import ok_
 
-from app.models import IatvCorpus
+from app.models import IatvCorpus, IatvDocument
 from projects.common.analysis import (
-    _count_by_start_localtime, daily_counts  # , shows_per_date,
+    _count_by_start_localtime, daily_counts, shows_per_date
 )
 
 
@@ -64,7 +64,7 @@ def test_count_for_each_local_time():
         'Tracy Morgans news hour', 'Dingbat Alley', 'iCry Sad News Time',
         'Digging Turnips with Ethan Land', 'Good morning, middle america!'
     ]
-    n = ['CNN', 'MSNBC', 'Fox News']
+    n = ['CNNW', 'MSNBCW', 'FOXNEWSW']
     fw = ['kill', 'murder', 'punch', 'attack']
     so = ['trump', 'clinton', 'obama', 'media']
 
@@ -176,7 +176,7 @@ def test_daily_counts():
         'Tracy Morgans news hour', 'Dingbat Alley', 'iCry Sad News Time',
         'Digging Turnips with Ethan Land', 'Good morning, middle america!'
     ]
-    n = ['CNN', 'MSNBC', 'Fox News']
+    n = ['CNNW', 'MSNBCW', 'FOXNEWSW']
     fw = ['kill', 'murder', 'punch', 'attack']
     so = ['trump', 'clinton', 'obama', 'media']
 
@@ -204,27 +204,218 @@ def test_daily_counts():
     pd.testing.assert_frame_equal(expected_network_output, network_output)
 
 
+def _setup_iatv_corpus(iatv_corpus_name):
+
+    # programs = {
+    #     'MSNBCW': ['Dingbat Alley', 'iCry Sad News Time'],
+    #     'CNNW': ['Tracy Morgans news hour'],
+    #     'FOXNEWSW': ['Digging Turnips', 'Good morning, middle america!']
+    # }
+
+    # build IatvDocument instances to be part of the IatvCorpus
+    # one or two for each day for each network
+    fake_id = 'XXX123'
+    fake_data = 'this is a show'
+    fake_url = 'http://www.iatv.yo/XXX123'
+
+    docs = [
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='MSNBCW',
+            program_name='Dingbat Alley',
+            start_localtime=datetime(2016, 9, 1, 20)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='MSNBCW',
+            program_name='Dingbat Alley',
+            start_localtime=datetime(2016, 9, 2, 20)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='MSNBCW',
+            program_name='Dingbat Alley',
+            start_localtime=datetime(2016, 9, 3, 20)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='MSNBCW',
+            program_name='iCry Sad News Time',
+            start_localtime=datetime(2016, 9, 1, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='MSNBCW',
+            program_name='iCry Sad News Time',
+            start_localtime=datetime(2016, 9, 2, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='CNNW',
+            program_name='Tracy Morgan news hour',
+            start_localtime=datetime(2016, 9, 1, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='CNNW',
+            program_name='Tracy Morgan news hour',
+            start_localtime=datetime(2016, 9, 4, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='FOXNEWSW',
+            program_name='Digging Turnips',
+            start_localtime=datetime(2016, 9, 2, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='FOXNEWSW',
+            program_name='Digging Turnips',
+            start_localtime=datetime(2016, 9, 3, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='FOXNEWSW',
+            program_name='Digging Turnips',
+            start_localtime=datetime(2016, 9, 4, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='FOXNEWSW',
+            program_name='Good morning, middle america!',
+            start_localtime=datetime(2016, 9, 1, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='FOXNEWSW',
+            program_name='Good morning, middle america!',
+            start_localtime=datetime(2016, 9, 2, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='FOXNEWSW',
+            program_name='Good morning, middle america!',
+            start_localtime=datetime(2016, 9, 3, 18)
+        ),
+
+        IatvDocument(
+            document_data=fake_data,
+            iatv_id=fake_id,
+            iatv_url=fake_url,
+            network='FOXNEWSW',
+            program_name='Good morning, middle america!',
+            start_localtime=datetime(2016, 9, 4, 18)
+        )
+    ]
+
+    for doc in docs:
+        doc.save()
+
+    return docs
+
+
 def _setup_mongo():
 
     test_corpus_name = 'Test ' + datetime.now().isoformat()[:-7]
 
-    ic = IatvCorpus(name=test_corpus_name)
+    docs = _setup_iatv_corpus(test_corpus_name)
+
+    ic = IatvCorpus(name=test_corpus_name, documents=docs)
 
     ic.save()
 
     return test_corpus_name
 
 
-def _teardown_mongo():
-    pass
+def _teardown_mongo(test_corpus_name):
+
+    ic = IatvCorpus.objects(name=test_corpus_name)[0]
+    # iterate over all documents and remove
+    for doc in ic.documents:
+        IatvDocument.objects(pk=doc.pk)[0].delete()
+
+    ic.delete()
 
 
 def test_shows_per_day():
+    '''
+    Insert some shows into the database using the program names (pn) and
+    networks (n) from other parts of the tests.
 
-    test_iatv_corpus_name = _setup_mongo()
+    XXX these program names associated with a network should be in
+    a dictionary to avoid straining my brain remembering which network went
+    with which program name XXX
+    '''
+    test_corpus_name = _setup_mongo()
 
+    ic = IatvCorpus.objects(name=test_corpus_name)[0]
 
-    assert False
+    date_index = pd.date_range('2016-9-1', '2016-9-4', freq='D')
+
+    expected_spd = pd.Series(
+        index=date_index,
+        data=[4, 4, 3, 3],
+        dtype=np.float64
+    )
+    spd = shows_per_date(date_index, ic)
+
+    pd.testing.assert_series_equal(expected_spd, spd)
+
+    expected_spd_by_network = pd.DataFrame(
+        index=date_index,
+        data={
+            'MSNBCW':   [2, 2, 1, 0],
+            'CNNW':     [1, 0, 0, 1],
+            'FOXNEWSW': [1, 2, 2, 2]
+        },
+        dtype=np.float64
+    )
+    spd_by_network = shows_per_date(date_index, ic, by_network=True)
+
+    pd.testing.assert_frame_equal(expected_spd_by_network, spd_by_network)
+
+    import ipdb
+    ipdb.set_trace()
+
+    _teardown_mongo(test_corpus_name)
 
 
 # def test_daily_frequency():

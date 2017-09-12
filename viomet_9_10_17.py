@@ -99,7 +99,7 @@ def fit_all_networks(analyzer, dr, freq=True, shows_per_date=None):
             # tau1 = best_fit.first_date
             # tau2 = best_fit.second_date
 
-            results.update({network: [best_fit]})
+            results.update({network: best_fit})
 
             print('finished fitting', network)
 
