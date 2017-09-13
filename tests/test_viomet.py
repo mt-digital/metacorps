@@ -6,7 +6,8 @@ from nose.tools import ok_
 
 from app.models import IatvCorpus, IatvDocument
 from projects.common.analysis import (
-    _count_by_start_localtime, daily_counts, shows_per_date
+    _count_by_start_localtime, daily_metaphor_counts, shows_per_date,
+    daily_frequency
 )
 
 
@@ -15,19 +16,19 @@ def _gen_test_input(pn, n, fw, so):
     rows = [
         # Tracy Morgan on CNN says "kill" and "punch"
         # aired 9/1/16 at 21:00/9pm
-        (datetime(2016, 9, 1, 21), pn[0], n[0], fw[0], so[0]),
-        (datetime(2016, 9, 1, 21), pn[0], n[0], fw[2], so[0]),
+        (datetime(2016, 9, 1, 21), pn[0], n[1], fw[0], so[0]),
+        (datetime(2016, 9, 1, 21), pn[0], n[1], fw[2], so[0]),
 
         # Dingbat Alley on MSNBC says "kill", "punch", and "attack"
         # aired 9/2/16 at 20:00/8pm
-        (datetime(2016, 9, 2, 20), pn[1], n[1], fw[0], so[1]),
-        (datetime(2016, 9, 2, 20), pn[1], n[1], fw[2], so[2]),
-        (datetime(2016, 9, 2, 20), pn[1], n[1], fw[3], so[1]),
+        (datetime(2016, 9, 2, 20), pn[1], n[0], fw[0], so[1]),
+        (datetime(2016, 9, 2, 20), pn[1], n[0], fw[2], so[2]),
+        (datetime(2016, 9, 2, 20), pn[1], n[0], fw[3], so[1]),
 
         # iCry Sad News on MSNBC says "kill" and "murder"
         # aired 9/2/16 at 18:00/6pm
-        (datetime(2016, 9, 2, 18), pn[2], n[1], fw[0], so[1]),
-        (datetime(2016, 9, 2, 18), pn[2], n[1], fw[1], so[3]),
+        (datetime(2016, 9, 2, 18), pn[2], n[0], fw[0], so[1]),
+        (datetime(2016, 9, 2, 18), pn[2], n[0], fw[1], so[3]),
 
         # Digging Turnips on Fox News says "kill", "murder", and "attack"
         # aired 9/3 and 9/4 at 20:00/8pm
@@ -79,10 +80,10 @@ def test_count_for_each_local_time():
     expected_prog_network_output = pd.DataFrame(
         data=[
             (datetime(2016, 9, 1, 6),  pn[4], n[2], 1),
-            (datetime(2016, 9, 1, 21), pn[0], n[0], 2),
+            (datetime(2016, 9, 1, 21), pn[0], n[1], 2),
             (datetime(2016, 9, 2, 6),  pn[4], n[2], 1),
-            (datetime(2016, 9, 2, 18), pn[2], n[1], 2),
-            (datetime(2016, 9, 2, 20), pn[1], n[1], 3),
+            (datetime(2016, 9, 2, 18), pn[2], n[0], 2),
+            (datetime(2016, 9, 2, 20), pn[1], n[0], 3),
             (datetime(2016, 9, 3, 20), pn[3], n[2], 2),
             (datetime(2016, 9, 4, 6),  pn[4], n[2], 1),
             (datetime(2016, 9, 4, 20), pn[3], n[2], 1),
@@ -110,10 +111,10 @@ def test_count_for_each_local_time():
     expected_network_output = pd.DataFrame(
         data=[
             (datetime(2016, 9, 1, 6),  n[2], 1),
-            (datetime(2016, 9, 1, 21), n[0], 2),
+            (datetime(2016, 9, 1, 21), n[1], 2),
             (datetime(2016, 9, 2, 6),  n[2], 1),
-            (datetime(2016, 9, 2, 18), n[1], 2),
-            (datetime(2016, 9, 2, 20), n[1], 3),
+            (datetime(2016, 9, 2, 18), n[0], 2),
+            (datetime(2016, 9, 2, 20), n[0], 3),
             (datetime(2016, 9, 3, 20), n[2], 2),
             (datetime(2016, 9, 4, 6),  n[2], 1),
             (datetime(2016, 9, 4, 20), n[2], 1),
@@ -168,7 +169,7 @@ def test_count_for_each_local_time():
         )
 
 
-def test_daily_counts():
+def test_daily_metaphor_counts():
     '''
     Convert an Analysis.df to be daily timeseries of network usage
     '''
@@ -176,7 +177,7 @@ def test_daily_counts():
         'Tracy Morgans news hour', 'Dingbat Alley', 'iCry Sad News Time',
         'Digging Turnips with Ethan Land', 'Good morning, middle america!'
     ]
-    n = ['CNNW', 'MSNBCW', 'FOXNEWSW']
+    n = ['MSNBCW', 'CNNW', 'FOXNEWSW']
     fw = ['kill', 'murder', 'punch', 'attack']
     so = ['trump', 'clinton', 'obama', 'media']
 
@@ -186,8 +187,8 @@ def test_daily_counts():
     expected_network_output = pd.DataFrame(
         index=date_index,
         data=[
-            (2, 0, 1),
-            (0, 5, 1),
+            (0, 2, 1),
+            (5, 0, 1),
             (0, 0, 2),
             (0, 0, 2),
         ],
@@ -199,7 +200,7 @@ def test_daily_counts():
     date_index = pd.date_range('2016-9-1', '2016-9-4', freq='D')
 
     # put columns in the same order for comparison
-    network_output = daily_counts(input_df, ['network'], date_index)[n]
+    network_output = daily_metaphor_counts(input_df, date_index, by=['network'])[n]
 
     pd.testing.assert_frame_equal(expected_network_output, network_output)
 
@@ -412,20 +413,49 @@ def test_shows_per_day():
 
     pd.testing.assert_frame_equal(expected_spd_by_network, spd_by_network)
 
-    import ipdb
-    ipdb.set_trace()
-
     _teardown_mongo(test_corpus_name)
 
 
-# def test_daily_frequency():
+def test_daily_frequency():
 
-#     test_corpus_name = 'Test ' + datetime.now().isoformat()[:-7]
+    test_corpus_name = _setup_mongo()
+    date_index = pd.date_range('2016-9-1', '2016-9-4', freq='D')
+    ic = IatvCorpus.objects(name=test_corpus_name)[0]
 
-#     # create IatvCorpus entries that make sense with existing fake data
+    # obtained by dividing total metaphor counts by total shows per day
+    expected_metaphor_freq_all = pd.DataFrame(
+        index=date_index, data={'freq': [.75, 1.5, 2.0/3.0, 2.0/3.0]}
+    )
 
-#     spd = shows_per_date(iatv_corpus=IatvCorpus.objects.get(
-#             name=test_corpus_name
-#         )
-#     )
-#     assert False
+    pn = [
+        'Tracy Morgans news hour', 'Dingbat Alley', 'iCry Sad News Time',
+        'Digging Turnips with Ethan Land', 'Good morning, middle america!'
+    ]
+    n = ['MSNBCW', 'CNNW', 'FOXNEWSW']
+    fw = ['kill', 'murder', 'punch', 'attack']
+    so = ['trump', 'clinton', 'obama', 'media']
+
+    input_df = _gen_test_input(pn, n, fw, so)
+    daily_freq = daily_frequency(input_df, date_index, ic)
+
+    pd.testing.assert_frame_equal(daily_freq, expected_metaphor_freq_all)
+
+    daily_freq_by_network = daily_frequency(
+        input_df, date_index, ic, by=['network']
+    )[['MSNBCW', 'CNNW', 'FOXNEWSW']]
+
+    expected_metaphor_freq_by_network = pd.DataFrame(
+        index=date_index,
+        data=[
+            (0, 2, 1),
+            (2.5, np.nan, .5),
+            (0, np.nan, 1),
+            (np.nan, 0, 1)
+        ],
+        dtype=np.float64,
+        columns=pd.Index(['MSNBCW', 'CNNW', 'FOXNEWSW'], name='network')
+    )
+
+    pd.testing.assert_frame_equal(
+        daily_freq_by_network, expected_metaphor_freq_by_network
+    )
