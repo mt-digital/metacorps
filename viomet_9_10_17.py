@@ -5,7 +5,7 @@ from datetime import date
 
 from app.models import IatvCorpus
 from projects.common.analysis import (
-    shows_per_date, daily_counts, get_analyzer
+    shows_per_date, get_analyzer, daily_frequency
 )
 from projects.viomet.analysis import partition_AICs
 
@@ -64,22 +64,22 @@ def by_network_frequency_figure(analyzer,
         return None
 
 
-def fit_all_networks(analyzer, dr, freq=True, shows_per_date=None):
+def fit_all_networks(analyzer, dr, freq=True, iatv_corpus_name=None):
+
+    ic = IatvCorpus.objects(name=iatv_corpus_name)[0]
 
     if freq:
 
-        if shows_per_date is None:
-            raise RuntimeError('If freq=True, must provide shows_per_date')
+        if iatv_corpus_name is None:
+            raise RuntimeError('If freq=True, must provide iatv_corpus_name')
 
-        dr = pd.date_range('2016-09-01', '2016-11-30', freq='D')
+        # dr = pd.date_range('2016-09-01', '2016-11-30', freq='D')
 
-        full_df = daily_counts(
-            analyzer.df, ['network'], dr
-        )[['MSNBCW', 'CNNW', 'FOXNEWSW']]
+        # full_df = daily_counts(
+        #     analyzer.df, ['network'], dr
+        # )[['MSNBCW', 'CNNW', 'FOXNEWSW']]
 
-        # XXX NOT QUITE RIGHT -- NEED TO DIVIDE BY NUMBER OF SHOWS ON EACH
-        # NETWORK!!! BEING FIXED IN projects.common.analysis.shows_per_date
-        network_freq = full_df.div(shows_per_date, axis='rows')
+        network_freq = daily_frequency(analyzer.df, dr, ic, by=['network'])
 
         results = {}
         for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']:
@@ -96,9 +96,6 @@ def fit_all_networks(analyzer, dr, freq=True, shows_per_date=None):
 
             best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]
 
-            # tau1 = best_fit.first_date
-            # tau2 = best_fit.second_date
-
             results.update({network: best_fit})
 
             print('finished fitting', network)
@@ -106,7 +103,16 @@ def fit_all_networks(analyzer, dr, freq=True, shows_per_date=None):
         return results
 
     else:
-        pass
+
+        all_freq = daily_frequency(analyzer.df, dr, ic).reset_index().dropna()
+
+        all_freq.columns = ['date', 'freq']
+
+        all_fits = partition_AICs(all_freq, model_formula='freq ~ state')
+
+        best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]
+
+        return best_fit
 
 
 if __name__ == '__main__':
