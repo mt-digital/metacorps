@@ -1,13 +1,17 @@
 import pandas as pd
-# import matplotlib.pyplot as plt
-
-from datetime import date
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.dates as pltdates
+from datetime import datetime, timedelta
 
 from app.models import IatvCorpus
 from projects.common.analysis import (
-    shows_per_date, get_analyzer, daily_frequency
+    shows_per_date, get_analyzer, daily_metaphor_counts, daily_frequency
 )
-from projects.viomet.analysis import partition_AICs
+from projects.viomet.analysis import partition_AICs, PartitionInfo
+
+
+sns.set()
 
 
 def generate_figures():
@@ -29,7 +33,7 @@ def by_network_total_figure(analyzer,
     if (partition_date1 is None or partition_date2 is None):
 
         dr = pd.date_range('2016-09-01', '2016-11-30', freq='D')
-        full_df = daily_counts(adf, ['network'], dr)
+        full_df = daily_metaphor_counts(adf, ['network'], dr)
 
         full_df.sum().plot(kind='bar')
 
@@ -37,47 +41,130 @@ def by_network_total_figure(analyzer,
         return None
 
 
+DEFAULT_PARTITION_DATES = (datetime(2016, 10, 1), datetime(2016, 10, 31))
+
+
 def by_network_frequency_figure(analyzer,
-                                spd,
+                                dr=pd.date_range(
+                                    '2016-09-01', '2016-11-30', freq='D'
+                                ),
+                                iatv_corpus_name=None,
                                 freq=True,
-                                partition_date1=None,
-                                partition_date2=None):
+                                partition_infos=None,
+                                font_scale=1.15,
+                                save_path=None):
+
+    sns.axes_style("darkgrid")
+    sns.set(font_scale=font_scale)
+
+    CUR_PAL = sns.color_palette()
 
     adf = analyzer.df
 
-    if (partition_date1 is None or partition_date2 is None):
-
-        dr = pd.date_range('2016-09-01', '2016-11-30', freq='D')
-
-        full_df = daily_counts(
-            adf, ['network'], dr
-        )[['MSNBCW', 'CNNW', 'FOXNEWSW']]
+    # fits are not being shown for this condition
+    if (partition_infos is None):
 
         if freq:
-            network_freq = full_df.div(spd, axis='rows')
+
+            network_freq = daily_frequency(
+                adf, dr, iatv_corpus_name, by=['network']
+            )
 
             network_freq.plot(style='o')
+
         else:
+
+            full_df = daily_metaphor_counts(
+                adf, ['network'], dr
+            )[['MSNBCW', 'CNNW', 'FOXNEWSW']]
+
             full_df.plot(style='o')
 
+    # show fits TODO Include more arguments so that fits don't have to be
+    # generated just to plot. Generate fits outside and pass fits in.
     else:
-        return None
+
+        if freq:
+
+            # put networks in desired order, left to right
+            networks = ['MSNBCW', 'CNNW', 'FOXNEWSW']
+
+            network_freq = daily_frequency(
+                adf, dr, iatv_corpus_name, by=['network']
+            )
+
+            ax = network_freq[networks].plot(
+                style='o', ms=14, alpha=0.5, legend=False, figsize=(7, 5)
+            )
+
+            for net_idx, network in enumerate(networks):
+
+                pinfo = partition_infos[network]
+
+                day_td = timedelta(seconds=3600)
+
+                d0 = dr[0]
+                d1 = pinfo.partition_date_1 - day_td
+
+                d2 = pinfo.partition_date_1
+                d3 = pinfo.partition_date_2
+
+                d4 = pinfo.partition_date_2 + day_td
+                d5 = dr[-1]
+
+                fg = pinfo.f_ground
+                fe = pinfo.f_excited
+
+                dates = pd.DatetimeIndex([d0, d1, d2, d3, d4, d5])
+                datas = [fg, fg, fe, fe, fg, fg]
+
+                # import ipdb
+                # ipdb.set_trace()
+                network_formatted = ['MSNBC', 'CNN', 'Fox News']
+                pd.Series(
+                    index=dates, data=datas
+                ).plot(
+                    lw=8, ax=ax, ls='-', color=CUR_PAL[net_idx], alpha=0.9,
+                    legend=True, label=network_formatted[net_idx]
+                )
+
+            # ax.xaxis.set_major_formatter(
+            #     pltdates.DateFormatter('%B 2016')
+            # )
+            # ax.xaxis.set_major_locator(
+            #     pltdates.MonthLocator()
+            # )
+            # plt.minorticks_off()
+            ax.xaxis.set_minor_formatter(pltdates.DateFormatter('%-d'))
+            ax.xaxis.set_minor_locator(pltdates.DayLocator(bymonthday=(1, 15)))
+
+            ax.grid(which='minor', axis='x')
+
+            ax.set_xlabel('Date')
+            ax.set_ylabel('Frequency of usage')
+            ax.set_title(
+                'Metaphorical violence usage on each of the three networks'
+            )
+
+            plt.tight_layout()
+
+            if save_path is not None:
+                fig = ax.get_figure()
+                fig.savefig(save_path)
+                plt.close()
 
 
-def fit_all_networks(analyzer, dr, freq=True, iatv_corpus_name=None):
+# TODO iatv_corpus_name should be something associated with an Analyzer
+def fit_all_networks(analyzer, dr, iatv_corpus_name, by_network=True):
 
     ic = IatvCorpus.objects(name=iatv_corpus_name)[0]
 
-    if freq:
+    if by_network:
 
         if iatv_corpus_name is None:
-            raise RuntimeError('If freq=True, must provide iatv_corpus_name')
-
-        # dr = pd.date_range('2016-09-01', '2016-11-30', freq='D')
-
-        # full_df = daily_counts(
-        #     analyzer.df, ['network'], dr
-        # )[['MSNBCW', 'CNNW', 'FOXNEWSW']]
+            raise RuntimeError(
+                'If by_network=True, must provide iatv_corpus_name'
+            )
 
         network_freq = daily_frequency(analyzer.df, dr, ic, by=['network'])
 
@@ -96,9 +183,9 @@ def fit_all_networks(analyzer, dr, freq=True, iatv_corpus_name=None):
 
             best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]
 
-            results.update({network: best_fit})
+            pinfo = PartitionInfo.from_fit(best_fit)
 
-            print('finished fitting', network)
+            results.update({network: (pinfo, best_fit)})
 
         return results
 
@@ -117,4 +204,19 @@ def fit_all_networks(analyzer, dr, freq=True, iatv_corpus_name=None):
 
 if __name__ == '__main__':
 
-    generate_figures()
+    networks = ['MSNBCW', 'CNNW', 'FOXNEWSW']
+
+    # make fits
+    icname = 'Viomet Sep-Nov 2016'
+    a = get_analyzer(icname)
+    dr = pd.date_range('2016-09-01', '2016-11-30', freq='D')
+
+    fitall = fit_all_networks(a, dr, icname)
+
+    pis = {network: fitall[network][0] for network in networks}
+
+    # plot fits to pdf
+    by_network_frequency_figure(
+        a, dr, icname, partition_infos=pis,
+        save_path='/Users/mt/workspace/papers/viomet/Figures/dynamic_model_3network.pdf'
+    )

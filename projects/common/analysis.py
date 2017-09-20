@@ -288,6 +288,8 @@ def shows_per_date(date_index, iatv_corpus, by_network=False):
         (pandas.Series) if by_network is False, (pandas.DataFrame)
             if by_network is true.
     '''
+    if type(iatv_corpus) is str:
+        iatv_corpus = IatvCorpus.objects(name=iatv_corpus)[0]
 
     docs = iatv_corpus.documents
 
@@ -402,7 +404,8 @@ def daily_frequency(df, date_index, iatv_corpus, by=None):
         ret.columns = ['freq']
 
     else:
-        print('Dont know what to do with this input')
-        return None
+        spd = shows_per_date(date_index, iatv_corpus)
+        daily = daily_metaphor_counts(df, date_index, by=by)
+        ret = daily.div(spd, axis='rows')
 
     return ret

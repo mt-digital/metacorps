@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from datetime import datetime
+from datetime import datetime, date
 from nose.tools import ok_
 
 from app.models import IatvCorpus, IatvDocument
@@ -9,6 +9,7 @@ from projects.common.analysis import (
     _count_by_start_localtime, daily_metaphor_counts, shows_per_date,
     daily_frequency
 )
+from projects.viomet.analysis import PartitionInfo, partition_sums
 
 
 def _gen_test_input(pn, n, fw, so):
@@ -459,3 +460,60 @@ def test_daily_frequency():
     pd.testing.assert_frame_equal(
         daily_freq_by_network, expected_metaphor_freq_by_network
     )
+
+
+def test_partition_sum():
+    '''
+    Given a dataframe with counts for 'All' or network columns, calculate sum of each partition for each column
+    '''
+    partition_infos = {
+        'MSNBCW': PartitionInfo(datetime(2016, 9, 1), datetime(2016, 9, 2), 1, 2.4),
+        'CNNW': PartitionInfo(datetime(2016, 9, 2), datetime(2016, 9, 4), 2, 2.4),
+        'FOXNEWSW': PartitionInfo(datetime(2016, 9, 2), datetime(2016, 9, 4), 1.5, 2),
+        'All':    PartitionInfo(datetime(2016, 9, 1), datetime(2016, 9, 3), 1, 3.0)
+    }
+
+    date_index = pd.date_range('2016-9-1', '2016-9-5', freq='D')
+
+    # generate input_df
+    pn = [
+        'Tracy Morgans news hour', 'Dingbat Alley', 'iCry Sad News Time',
+        'Digging Turnips with Ethan Land', 'Good morning, middle america!'
+    ]
+    n = ['MSNBCW', 'CNNW', 'FOXNEWSW']
+    fw = ['kill', 'murder', 'punch', 'attack']
+    so = ['trump', 'clinton', 'obama', 'media']
+
+    input_df = _gen_test_input(pn, n, fw, so)
+
+    counts_df = daily_metaphor_counts(input_df, date_index, by=['network'])[n]
+
+    expected_df = pd.DataFrame(
+        index=['MSNBCW', 'CNNW', 'FOXNEWSW', 'All'],
+        data={'ground': [0, 2, 1, 2], 'excited': [5, 0, 5, 11]},
+        dtype=np.float64
+    )
+    expected_df = expected_df[['ground', 'excited']]
+
+    psums = partition_sums(counts_df, partition_infos)
+
+    pd.testing.assert_frame_equal(psums, expected_df)
+
+
+def test_byweekday_frequency():
+    '''
+    Give the frequency per weekday for each network and all networks total
+    '''
+    # make index days of the week in order starting Sunday
+
+    # groupby days of the week? maybe need a column with days of week, then gb
+
+
+    assert False
+
+
+def test_subject_object_counts_per_partition():
+    '''
+    Given partition dates and analyzer, count subject and object
+    '''
+    assert False

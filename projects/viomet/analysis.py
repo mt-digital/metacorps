@@ -79,6 +79,8 @@ def partition_AICs(df,
 
             d['model'].append(model)
 
+
+
     return pd.DataFrame(d)
 
 
@@ -114,3 +116,65 @@ def add_phases(df,
 
 def relative_likelihood(aic_min, aic_other):
     return np.exp((aic_min - aic_other)/2.0)
+
+
+class PartitionInfo:
+
+    def __init__(self,
+                 partition_date_1,
+                 partition_date_2,
+                 f_ground,
+                 f_excited):
+
+        self.partition_date_1 = partition_date_1
+        self.partition_date_2 = partition_date_2
+        self.f_ground = f_ground
+        self.f_excited = f_excited
+
+    @classmethod
+    def from_fit(cls, fit):
+
+        partition_date_1 = fit.first_date
+        partition_date_2 = fit.second_date
+
+        # R model returns the excited state freq as intercept b/c alphabetical
+        f_excited = fit.coef[0]
+
+        # the slope is the second coefficient; it will be negative if
+        # hypothesis is correct
+        f_ground = f_excited + fit.coef[1]
+
+        return cls(partition_date_1, partition_date_2, f_ground, f_excited)
+
+
+def partition_sums(counts_df, partition_infos):
+    '''
+    partition_infos should be a dictionary with 'MSNBCW', 'CNNW', 'FOXNEWSW',
+    and 'All' as keys, with a PartitionInfo instance for each.
+    '''
+    ret = pd.DataFrame(
+        index=['MSNBCW', 'CNNW', 'FOXNEWSW', 'All'],
+        data=dict([('ground', np.zeros(4)), ('excited', np.zeros(4))])
+    )
+    ret = ret[['ground', 'excited']]
+
+    cdf_index = counts_df.index
+
+    counts_df['All'] = counts_df.sum(axis=1)
+
+    for network in ret.index:
+
+        pd1 = partition_infos[network].partition_date_1
+        pd2 = partition_infos[network].partition_date_2
+
+        ground = counts_df.loc[
+            (cdf_index < pd1) | (cdf_index > pd2), network
+        ].sum()
+
+        excited = counts_df.loc[
+            (cdf_index >= pd1) & (cdf_index <= pd2), network
+        ].sum()
+
+        ret.loc[network] = [ground, excited]
+
+    return ret
