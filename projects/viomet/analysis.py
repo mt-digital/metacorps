@@ -7,7 +7,7 @@ Date: April 01, 2017
 import numpy as np
 import pandas as pd
 
-from datetime import date
+from datetime import datetime
 from rpy2.robjects.packages import importr
 
 from rpy2 import robjects as ro
@@ -25,16 +25,16 @@ coef = importr('stats').coef
 
 
 DEFAULT_FIRST_DATES = [
-    date(2016, 9, d) for d in range(20, 31)
+    datetime(2016, 9, d) for d in range(20, 31)
 ] + [
-    date(2016, 10, d) for d in range(1, 15)
+    datetime(2016, 10, d) for d in range(1, 15)
 ]
 
 
 DEFAULT_SECOND_DATES = [
-    date(2016, 10, d) for d in range(15, 32)
+    datetime(2016, 10, d) for d in range(15, 32)
 ] + [
-    date(2016, 11, d) for d in range(1, 30)
+    datetime(2016, 11, d) for d in range(1, 30)
 ]
 
 
@@ -85,8 +85,8 @@ def partition_AICs(df,
 
 
 def add_phases(df,
-               date1=date(2016, 9, 26),
-               date2=date(2016, 10, 20)
+               date1=datetime(2016, 9, 26),
+               date2=datetime(2016, 10, 20)
                ):
     '''
     Create a dataframe with a new 'state' column
@@ -95,7 +95,7 @@ def add_phases(df,
     phase = []
     ret = df.copy()
 
-    for i, d in enumerate([d.date() for d in df.date]):
+    for i, d in enumerate([d for d in df.date]):
 
         if date1 > d:
             # phase.append(1)
@@ -160,6 +160,7 @@ def partition_sums(counts_df, partition_infos):
 
     cdf_index = counts_df.index
 
+    counts_df = counts_df.copy()
     counts_df['All'] = counts_df.sum(axis=1)
 
     for network in ret.index:

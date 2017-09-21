@@ -2,7 +2,9 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.dates as pltdates
+
 from datetime import datetime, timedelta
+from matplotlib import gridspec
 
 from app.models import IatvCorpus
 from projects.common.analysis import (
@@ -12,6 +14,18 @@ from projects.viomet.analysis import partition_AICs, PartitionInfo
 
 
 sns.set()
+
+# for 8.5x11 paper
+DEFAULT_FIGSIZE = (7.5, 5)
+
+# in 0 - 6 order used by Python; see
+# https://pandas.pydata.org/pandas-docs/stable/generated/pandas.DatetimeIndex.dayofweek.html
+WEEKDAYS = (
+    'M', 'T', 'W', 'Th',
+    'F', 'Sa', 'Su'
+    # 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+    # 'Friday', 'Saturday', 'Sunday'
+)
 
 
 def generate_figures():
@@ -94,7 +108,7 @@ def by_network_frequency_figure(analyzer,
             )
 
             ax = network_freq[networks].plot(
-                style='o', ms=14, alpha=0.5, legend=False, figsize=(7, 5)
+                style='o', ms=14, alpha=0.5, legend=False, figsize=DEFAULT_FIGSIZE
             )
 
             for net_idx, network in enumerate(networks):
@@ -118,8 +132,6 @@ def by_network_frequency_figure(analyzer,
                 dates = pd.DatetimeIndex([d0, d1, d2, d3, d4, d5])
                 datas = [fg, fg, fe, fe, fg, fg]
 
-                # import ipdb
-                # ipdb.set_trace()
                 network_formatted = ['MSNBC', 'CNN', 'Fox News']
                 pd.Series(
                     index=dates, data=datas
@@ -202,6 +214,81 @@ def fit_all_networks(analyzer, dr, iatv_corpus_name, by_network=True):
         return best_fit
 
 
+def by_weekday_figure(analyzer, date_index, iatv_corpus_name,
+                      font_scale=0.65, save_path=None):
+    '''
+    average frequency and average number per day with errorbars calculated
+    from taking std() of the series of All.
+    '''
+    sns.axes_style("darkgrid")
+    sns.set(font_scale=font_scale)
+
+    CUR_PAL = sns.color_palette()
+
+    df = analyzer.df
+    counts = daily_metaphor_counts(df, date_index, by=['network'])
+    freq = daily_frequency(df, date_index, iatv_corpus_name, by=['network'])
+
+    fig = plt.figure(figsize=DEFAULT_FIGSIZE)
+    gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1])
+
+    for i, df in enumerate([counts, freq]):
+
+        # keep df pristine
+        df_mean_pre = df.copy()
+        df_mean_pre['weekday'] = df.index.dayofweek
+        df_mean = df_mean_pre.groupby(['weekday']).mean()
+
+        # now calculate standard deviation of all-networks sum for stacked bars
+        # df_std_pre = df.sum(axis=1).to_frame()
+        df_std_pre = df.copy()
+        df_std_pre['weekday'] = df_std_pre.index.dayofweek
+        df_std = df_std_pre.groupby(['weekday']).std()
+        # XXX can't quite get error bars to work how I want... oh well
+
+        ax = plt.subplot(gs[i])
+
+        df_mean.index = WEEKDAYS
+
+        rev_idx = list(df_mean.index)
+        rev_idx.reverse()
+
+        # import ipdb
+        # ipdb.set_trace()
+
+        # xerr = list(df_std[0]/2.0)
+        # xerr.reverse()
+        # xerr = df_std
+
+        df_mean.loc[rev_idx[2:]][
+            ['MSNBCW', 'CNNW', 'FOXNEWSW']
+        ].plot(ax=ax, kind='barh', stacked=True,
+               # legend=(False, True)[i], xerr=xerr)
+               align='center', legend=False)
+
+        # ax.set_xlabel(('average counts', 'average frequency')[i])
+        ax.set_title(
+            ('Average counts per weekday',
+             'Average frequency per weekday')[i]
+        )
+
+        if i == 1:
+            ax.set_xticks(range(7))
+            ax.set_xlim(0, 6.35)
+        else:
+            ax.set_xticks(range(0, 11, 2))
+
+    # fig.subplots_adjust(bottom=-1.50)
+    legend = plt.legend(loc='upper center',
+                        labels=['MSNBC', 'CNN', 'Fox News'],
+                        bbox_to_anchor=(-0.05, -0.065), ncol=3)
+
+    plt.tight_layout()
+    if save_path is not None:
+        plt.savefig(save_path)
+
+
+
 if __name__ == '__main__':
 
     networks = ['MSNBCW', 'CNNW', 'FOXNEWSW']
@@ -219,4 +306,9 @@ if __name__ == '__main__':
     by_network_frequency_figure(
         a, dr, icname, partition_infos=pis,
         save_path='/Users/mt/workspace/papers/viomet/Figures/dynamic_model_3network.pdf'
+    )
+
+    by_weekday_figure(
+        a, dr, icname, partition_infos=pis,
+        save_path='/Users/mt/workspace/papers/viomet/Figures/by_weekday.pdf'
     )
