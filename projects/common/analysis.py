@@ -378,6 +378,7 @@ def daily_metaphor_counts(df, date_index, by=None):
     full_df = pd.DataFrame(index=hourly_index, columns=by + ['counts'],
                            dtype=np.int32)
 
+    # XXX git a good comment in here, wtf is going on
     for r in counts.itertuples():
         full_df.loc[r.start_localtime] = \
             [r.__getattribute__(attr) for attr in by] + [r.counts]
@@ -409,3 +410,77 @@ def daily_frequency(df, date_index, iatv_corpus, by=None):
         ret = daily.div(spd, axis='rows')
 
     return ret
+
+
+class SubjectObjectData:
+
+    def __init__(self, data_frame, subj, obj, partition_infos=None):
+        self.data_frame = data_frame
+        self.subject = subj
+        self.object = obj
+        self.partition_infos = partition_infos
+        self.partition_data_frame = None
+
+    @classmethod
+    def from_analyzer_df(cls, analyzer_df, subj=None, obj=None,
+                         subj_contains=True, obj_contains=True,
+                         date_range=pd.date_range(
+                             '2016-09-01', '2016-11-30', freq='D'
+                         )):
+        '''
+        Given an Analyzer instance's DataFrame, calculate the frequency of
+        metaphorical violence with a given subject, object,
+        or a subject-object pair.
+
+        Returns:
+            (SubjectObjectData) an initialized class. The data_frame attribute
+            will be filled with by-network counts of the specified subj/obj
+            configuration.
+        '''
+
+        pre = analyzer_df
+
+        def _match_checker(df, subj, obj, subj_contains, obj_contains):
+            '''
+            Returns list of booleans for selecting subject and object matches
+            '''
+
+            if subj is None and obj is None:
+                raise RuntimeError('subj and obj cannot both be None')
+
+            if subj is not None:
+                if subj_contains:
+                    retSubj = list(df.subjects.str.contains(subj))
+                else:
+                    retSubj = list(df.subjects == subj)
+
+                if obj is None:
+                    ret = retSubj
+
+            # TODO could probably combine these, but now not clear how
+            if obj is not None:
+                if obj_contains:
+                    retObj = list(df.objects.str.contains(obj))
+                else:
+                    retObj = list(df.objects == obj)
+
+                if subj is not None:
+                    ret = retObj
+                else:
+                    ret = [rs and ro for rs, ro in zip(retSubj, retObj)]
+
+            return ret
+
+        pre = pre[
+            _match_checker(pre, subj, obj, subj_contains, obj_contains)
+        ]
+
+        # then do counts or frequencies as normal, since you have just
+        # subset the relevant rows.
+        counts_df = daily_metaphor_counts(pre, date_range, by=['network'])[
+            ['MSNBCW', 'CNNW', 'FOXNEWSW']
+        ]
+        return cls(counts_df, subj, obj)
+
+    def partition(self, partition_infos):
+        pass
