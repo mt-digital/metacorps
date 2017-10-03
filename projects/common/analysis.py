@@ -464,7 +464,7 @@ class SubjectObjectData:
                 else:
                     retObj = list(df.objects == obj)
 
-                if subj is not None:
+                if subj is None:
                     ret = retObj
                 else:
                     ret = [rs and ro for rs, ro in zip(retSubj, retObj)]
@@ -477,9 +477,26 @@ class SubjectObjectData:
 
         # then do counts or frequencies as normal, since you have just
         # subset the relevant rows.
-        counts_df = daily_metaphor_counts(pre, date_range, by=['network'])[
-            ['MSNBCW', 'CNNW', 'FOXNEWSW']
-        ]
+        counts_df = pd.DataFrame(
+            index=date_range, data=0.0,
+            columns=pd.Index(['MSNBCW', 'CNNW', 'FOXNEWSW'], name='network')
+        )
+        # there might be columns missing, so we have to insert into above zeros
+        to_insert_df = daily_metaphor_counts(pre, date_range, by=['network'])
+        # counts_df = daily_metaphor_counts(pre, date_range, by=['network'])[
+        #     ['MSNBCW', 'CNNW', 'FOXNEWSW']
+        # ]
+        # import ipdb
+        # ipdb.set_trace()
+        for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']:
+            if network in to_insert_df.columns:
+                for row in to_insert_df.itertuples():
+                    counts_df.loc[row.Index][network] = \
+                            row.__getattribute__(network)
+
+        # import ipdb
+        # ipdb.set_trace()
+
         return cls(counts_df, subj, obj)
 
     def partition(self, partition_infos):

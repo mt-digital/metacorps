@@ -533,7 +533,9 @@ def test_subject_object_counts_per_partition():
     )
 
     # test subj trump, all obj
-    subj_trump = SubjectObjectData.from_analyzer_df(input_df, subj='trump')
+    subj_trump = SubjectObjectData.from_analyzer_df(
+        input_df, subj='trump', date_range=date_range
+    )
     expected_subj_trump_df = pd.DataFrame(
         index=date_range,
         data=[
@@ -551,7 +553,7 @@ def test_subject_object_counts_per_partition():
 
     # test subj trump, obj clinton
     trump_clinton = SubjectObjectData.from_analyzer_df(
-        input_df, subj='trump', obj='clinton'
+        input_df, subj='trump', obj='clinton', date_range=date_range
     )
     expected_trump_clinton_df = pd.DataFrame(
         index=date_range,
@@ -564,13 +566,12 @@ def test_subject_object_counts_per_partition():
         columns=columns,
         dtype=np.float64
     )
-
     pd.testing.assert_frame_equal(trump_clinton.data_frame,
                                   expected_trump_clinton_df)
 
     # test obj trump, all subj
     obj_trump = SubjectObjectData.from_analyzer_df(
-        input_df, subj='clinton', obj='trump'
+        input_df, obj='trump', date_range=date_range
     )
     expected_obj_trump_df = pd.DataFrame(
         index=date_range,
