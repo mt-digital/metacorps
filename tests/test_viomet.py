@@ -503,17 +503,6 @@ def test_partition_sum():
     pd.testing.assert_frame_equal(psums, expected_df)
 
 
-def test_byweekday_frequency():
-    '''
-    Give the frequency per weekday for each network and all networks total
-    '''
-    # make index days of the week in order starting Sunday
-
-    # groupby days of the week? maybe need a column with days of week, then gb
-
-    assert False
-
-
 def test_subject_object_counts_per_partition():
     '''
     Given partition dates and analyzer, count subject and object
