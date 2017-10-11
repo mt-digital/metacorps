@@ -1,32 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
 from collections import OrderedDict, Counter
+from copy import deepcopy
 from datetime import datetime, timedelta
 
 from .export_project import ProjectExporter
 from app.models import IatvCorpus
 
-dt = datetime
 
-DEFAULT_DATE_RANGES = OrderedDict([
-    ('Pre-Debates (September 1 - September 26 6:00 PM)',
-        (dt(2016, 9, 1), dt(2016, 9, 26, 6,))),
-    ('Between First and Second Debates (September 26 7:30 PM - October 9 6:00 PM)',
-        (dt(2016, 9, 26, 7, 30), dt(2016, 10, 9, 6))),
-    ('Between Second and Third Debates (October 9 7:30 PM - October 19 6:00 PM)',
-        (dt(2016, 10, 9, 7, 30), dt(2016, 10, 19, 6))),
-    ('Between Third Debate and Election (October 19 7:30 PM - November 8 11:59 PM)',
-        (dt(2016, 10, 19, 7, 30), dt(2016, 11, 8, 11, 59, 59))),
-    ('Election to End of November (November 9 12:00 AM - November 30)',
-        (dt(2016, 11, 9), dt(2016, 11, 30, 11, 59, 59)))
-])
-
-
-
-COLUMNS_IN_ORDER = [
+DEFAULT_FACET_WORDS = [
     'attack',
     'hit',
     'beat',
@@ -40,7 +24,7 @@ COLUMNS_IN_ORDER = [
 ]
 
 
-def get_analyzer(project_name):
+def get_project_data_frame(project_name):
     '''
     Convenience method for creating a newly initialized instance of the
     Analyzer class. Currently the only argument is year since the projects all
@@ -55,134 +39,7 @@ def get_analyzer(project_name):
     if type(project_name) is int:
         project_name = str('Viomet Sep-Nov ' + project_name)
 
-    return Analyzer(
-        ProjectExporter(project_name).export_dataframe()
-    )
-
-
-class Analyzer:
-    '''
-    Wrapper for various analysis routines. Needs a properly-formatted
-    pandas DataFrame to initialize. The `get_analyzer` is the best way to
-    get a new Analyzer instance; it handles querying the database and
-    formatting the dataframe.
-    '''
-
-    def __init__(self, df):
-        '''
-        Arguments:
-            df (pandas.DataFrame): properly-formatted dataframe for generating
-                a new Analyzer. See behavior of
-                ProjectExporter.export_dataframe for how to format, or just
-                use it directly.
-        '''
-        self.df = df
-
-    def per_network_facet_counts(self,
-                                 date_ranges=DEFAULT_DATE_RANGES,
-                                 data_method='daily-average'):
-        # XXX fix docstring
-        """
-        Arguments:
-            date_ranges (dict): lookup table of date ranges and their names
-        Returns:
-            (dict) if distribution, dataframe of density of violence
-                words for each date range given in date_ranges. If distribution
-                is False, returns non-normalized values.
-        """
-        counts_df = _count_daily_instances(self.df)
-
-        ret_dict = {}
-        for rng_name, date_range in date_ranges.items():
-            ret_dict.update(
-                {
-                    rng_name:
-                    _select_range_and_pivot_daily_counts(
-                        date_range, counts_df, data_method
-                    )
-                }
-            )
-
-        # we want each underlying dataframe to have the same columns for plots
-        _standardize_columns(ret_dict)
-
-        return ret_dict
-
-    def plot_facets_by_dateranges(self,
-                                  date_ranges=DEFAULT_DATE_RANGES,
-                                  data_method='daily-average',
-                                  pdf_output=False):
-
-        nfc = self.per_network_facet_counts(date_ranges, data_method)
-
-        if pdf_output:
-            _pdf_plot_facets_by_dateranges(nfc, date_ranges, data_method)
-        else:
-            _plot_facets_by_dateranges(nfc, date_ranges, data_method)
-
-        plt.tight_layout(w_pad=0.5, h_pad=-0.5)
-
-    def plot_agency_counts_by_dateranges(self,
-                                         subj_obj,
-                                         date_ranges=DEFAULT_DATE_RANGES,
-                                         pdf_output=False):
-
-        ag = self.agency_counts_by_dateranges(subj_obj)
-
-        if pdf_output:
-            pass
-        else:
-            _plot_agency_counts_by_dateranges(ag, subj_obj, date_ranges)
-
-        plt.tight_layout()
-
-    def network_daily_timeseries(self, facets=None):
-        """
-        Create a timeseries for every network with each column a facet.
-
-        Arguments: None
-
-        Returns (dict): Dictionary of timeseries as explained in description
-        """
-        pass
-
-    def subject_counts(self, obj=None):
-        '''
-        Return daily frequency of subjects of metaphorical violence with
-        columns | date | subject | counts |
-
-        Believe this will require a groupby subject, then aggregate over
-        day.
-        '''
-        pass
-
-    def agency_counts_by_dateranges(self,
-                                    subj_obj,
-                                    date_ranges=DEFAULT_DATE_RANGES):
-        """
-        Arguments:
-            subj_obj (str): either 'subjects' or 'objects'
-
-        Returns (dict): dictionary with keys of date ranges as in the
-            per-network facet counts. Values are dataframes with
-            indexes networks and columns with clinton-object, clinton-subject,
-            trump-object, trump-subject. Of course this needs to be generalized
-            for 2012, but leave that as a TODO
-        """
-        counts_df = _count_daily_subj_obj(self.df, subj_obj)
-
-        ret_dict = {}
-        for rng_name, date_range in date_ranges.items():
-            ret_dict.update(
-                {
-                    rng_name:
-                    _select_range_and_pivot_subj_obj(
-                        date_range, counts_df, subj_obj
-                    )
-                }
-            )
-
-        return ret_dict
+    return ProjectExporter(project_name).export_dataframe()
 
 
 def _select_range_and_pivot_subj_obj(date_range, counts_df, subj_obj):
@@ -413,6 +270,17 @@ def daily_frequency(df, date_index, iatv_corpus, by=None):
 
 
 class SubjectObjectData:
+    '''
+    Container for timeseries of instances of a specified subject, object, or
+    subject-object pair. For example, we may look for all instances where
+    Donald Trump is the subject of metaphorical violence, irrespective of the
+    object. We also may want to see where he is the object, no matter who
+    is the subject. Or, we may want to search for pairs, say, all instances
+    where Hillary Clinton is the subject of metaphorical violence and
+    Donald Trump is the object of metaphorical violence, or vice-versa.
+
+    from_analyzer_df is currently the most likely constructor to be used
+    '''
 
     def __init__(self, data_frame, subj, obj, partition_infos=None):
         self.data_frame = data_frame
@@ -481,23 +349,41 @@ class SubjectObjectData:
             index=date_range, data=0.0,
             columns=pd.Index(['MSNBCW', 'CNNW', 'FOXNEWSW'], name='network')
         )
+
         # there might be columns missing, so we have to insert into above zeros
         to_insert_df = daily_metaphor_counts(pre, date_range, by=['network'])
-        # counts_df = daily_metaphor_counts(pre, date_range, by=['network'])[
-        #     ['MSNBCW', 'CNNW', 'FOXNEWSW']
-        # ]
-        # import ipdb
-        # ipdb.set_trace()
+
         for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']:
             if network in to_insert_df.columns:
                 for row in to_insert_df.itertuples():
                     counts_df.loc[row.Index][network] = \
                             row.__getattribute__(network)
 
-        # import ipdb
-        # ipdb.set_trace()
-
         return cls(counts_df, subj, obj)
 
     def partition(self, partition_infos):
         pass
+
+
+def facet_word_count(analyzer_df, facet_word_index, by_network=True):
+    '''
+    Count the number of times each facet word has been used. If by_network is
+    True, compute the usage of each word by network.
+
+    Arguments:
+        analyzer_df (pandas.DataFrame): dataframe of the IatvCorpus annotations
+        by_network (bool): group each partition's word counts by network?
+
+    Returns:
+        (pandas.DataFrame) or (pandas.Series) of counts depending on by_network
+    '''
+    if by_network:
+        return analyzer_df.groupby(
+                ['network', 'facet_word']
+            ).size().unstack(level=0)[
+                ['MSNBCW', 'CNNW', 'FOXNEWSW']
+            ].loc[facet_word_index].fillna(0.0)
+    else:
+        return analyzer_df.groupby(
+                ['facet_word']
+            ).size().loc[facet_word_index].fillna(0.0)

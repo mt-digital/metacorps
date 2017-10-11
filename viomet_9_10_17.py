@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -8,7 +9,8 @@ from matplotlib import gridspec
 
 from app.models import IatvCorpus
 from projects.common.analysis import (
-    shows_per_date, get_analyzer, daily_metaphor_counts, daily_frequency
+    shows_per_date, get_project_data_frame,
+    daily_metaphor_counts, daily_frequency, facet_word_count
 )
 from projects.viomet.analysis import partition_AICs, PartitionInfo
 
@@ -23,14 +25,14 @@ DEFAULT_FIGSIZE = (7.5, 5)
 WEEKDAYS = (
     'M', 'T', 'W', 'Th',
     'F', 'Sa', 'Su'
-    # 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-    # 'Friday', 'Saturday', 'Sunday'
 )
 
+FACET_WORDS = ['attack', 'beat', 'hit', 'slap', 'knock', 'grenade',
+               'jugular', 'slug', 'smack', 'strangle']
 
 def generate_figures():
 
-    analyzer = get_analyzer('Viomet Sep-Nov 2016')
+    analyzer = get_project_data_frame('Viomet Sep-Nov 2016')
 
     spd = shows_per_date(IatvCorpus.objects.get(name='Viomet Sep-Nov 2016'))
 
@@ -58,7 +60,7 @@ def by_network_total_figure(analyzer,
 DEFAULT_PARTITION_DATES = (datetime(2016, 10, 1), datetime(2016, 10, 31))
 
 
-def by_network_frequency_figure(analyzer,
+def by_network_frequency_figure(frequency_df,
                                 dr=pd.date_range(
                                     '2016-09-01', '2016-11-30', freq='D'
                                 ),
@@ -73,7 +75,7 @@ def by_network_frequency_figure(analyzer,
 
     CUR_PAL = sns.color_palette()
 
-    adf = analyzer.df
+    df = frequency_df
 
     # fits are not being shown for this condition
     if (partition_infos is None):
@@ -81,7 +83,7 @@ def by_network_frequency_figure(analyzer,
         if freq:
 
             network_freq = daily_frequency(
-                adf, dr, iatv_corpus_name, by=['network']
+                df, dr, iatv_corpus_name, by=['network']
             )
 
             network_freq.plot(style='o')
@@ -89,7 +91,7 @@ def by_network_frequency_figure(analyzer,
         else:
 
             full_df = daily_metaphor_counts(
-                adf, ['network'], dr
+                df, ['network'], dr
             )[['MSNBCW', 'CNNW', 'FOXNEWSW']]
 
             full_df.plot(style='o')
@@ -104,7 +106,7 @@ def by_network_frequency_figure(analyzer,
             networks = ['MSNBCW', 'CNNW', 'FOXNEWSW']
 
             network_freq = daily_frequency(
-                adf, dr, iatv_corpus_name, by=['network']
+                df, dr, iatv_corpus_name, by=['network']
             )
 
             ax = network_freq[networks].plot(
@@ -115,7 +117,7 @@ def by_network_frequency_figure(analyzer,
 
                 pinfo = partition_infos[network]
 
-                day_td = timedelta(seconds=3600)
+                day_td = timedelta(seconds=60)
 
                 d0 = dr[0]
                 d1 = pinfo.partition_date_1 - day_td
@@ -167,7 +169,7 @@ def by_network_frequency_figure(analyzer,
 
 
 # TODO iatv_corpus_name should be something associated with an Analyzer
-def fit_all_networks(analyzer, dr, iatv_corpus_name, by_network=True):
+def fit_all_networks(df, dr, iatv_corpus_name, by_network=True):
 
     ic = IatvCorpus.objects(name=iatv_corpus_name)[0]
 
@@ -178,7 +180,7 @@ def fit_all_networks(analyzer, dr, iatv_corpus_name, by_network=True):
                 'If by_network=True, must provide iatv_corpus_name'
             )
 
-        network_freq = daily_frequency(analyzer.df, dr, ic, by=['network'])
+        network_freq = daily_frequency(df, dr, ic, by=['network'])
 
         results = {}
         for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']:
@@ -203,7 +205,7 @@ def fit_all_networks(analyzer, dr, iatv_corpus_name, by_network=True):
 
     else:
 
-        all_freq = daily_frequency(analyzer.df, dr, ic).reset_index().dropna()
+        all_freq = daily_frequency(df, dr, ic).reset_index().dropna()
 
         all_freq.columns = ['date', 'freq']
 
@@ -288,6 +290,120 @@ def by_weekday_figure(analyzer, date_index, iatv_corpus_name,
         plt.savefig(save_path)
 
 
+def by_facet_word(df, partition_infos, facet_words=FACET_WORDS,
+                  font_scale=1.15, plot=False, save_path=None):
+    '''
+    Arguments:
+        df (pandas.DataFrame): dataframe of annotations of metaphorical
+            violence generated using IatvCorpus data; previously Analyzer.df
+        partition_infos (dict): dictionary of
+            projects.viomet.analysis.PartitionInfo instances, keyed by the
+            network they represent e.g. 'FOXNEWSW'
+
+    Returns:
+        None
+    '''
+    sns.axes_style("darkgrid")
+    sns.set(font_scale=font_scale)
+    # create choosers to select only excited or ground rows from df
+    msnbc_pi = partition_infos['MSNBCW']
+    msnbc_excited_chooser = (df.network == 'MSNBCW') & \
+        (
+            (df.start_localtime >= msnbc_pi.partition_date_1) &
+            (df.start_localtime <= msnbc_pi.partition_date_2)
+        )
+
+    cnn_pi = partition_infos['CNNW']
+    cnn_excited_chooser = (df.network == 'CNNW') & \
+        (
+            (df.start_localtime >= cnn_pi.partition_date_1) &
+            (df.start_localtime <= cnn_pi.partition_date_2)
+        )
+
+    fox_pi = partition_infos['FOXNEWSW']
+    fox_excited_chooser = (df.network == 'FOXNEWSW') & \
+        (
+            (df.start_localtime >= fox_pi.partition_date_1) &
+            (df.start_localtime <= fox_pi.partition_date_2)
+        )
+
+    excited_chooser = \
+        fox_excited_chooser | msnbc_excited_chooser | cnn_excited_chooser
+
+    excited_df = df[excited_chooser]
+    ground_df = df[~excited_chooser]
+
+    days_excited = {
+        k:
+            (partition_infos[k].partition_date_2 -
+             partition_infos[k].partition_date_1).days + 1
+
+        for k in ['MSNBCW', 'CNNW', 'FOXNEWSW']
+    }
+
+    # XXX
+    total_days = 91
+
+    days_ground = {
+        k: total_days - v
+        for k, v in days_excited.items()
+    }
+
+    for k in days_excited:
+
+        fwc_excited = \
+            facet_word_count(excited_df, facet_words) / days_excited[k]
+
+        fwc_ground = \
+            facet_word_count(ground_df, facet_words) / days_ground[k]
+
+    if plot:
+        # make two-panel to start: ground and excited; add a third excited - ground
+        # once the two-panel is done.
+        gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1])
+        fig, axes = plt.subplots(nrows=1, ncols=3, sharey=True, figsize=(6, 5))
+
+        # fig.suptitle('Comparison of violent word in ground and excited states')
+
+        p1 = fwc_ground.plot(
+            kind='barh', ax=axes[0], title='Ground State', legend=False
+        )
+        p2 = fwc_excited.plot(
+            kind='barh', ax=axes[1], title='Excited State'
+        ).legend(loc='lower center', labels=['MSNBC', 'CNN', 'Fox News'],
+                bbox_to_anchor=(-0.05, -0.1), ncol=3,
+                title='Average daily instances for network')
+
+        p3 = (fwc_excited - fwc_ground).plot(
+            kind='barh', ax=axes[2], title='Ground-to-excited change', legend=False
+        )
+
+        xlim = (-0.25, 3.75)
+        for ax in axes:
+            # ax.set_xlabel('Average daily instances')
+            ax.set_xticks(np.arange(-0.5, 3.75, 0.5))
+            ax.set_xlim(xlim)
+            ax.set_xticklabels(
+                ['', '0', '', '1', '', '2', '', '3', '']
+            )
+
+            ax.set_ylabel('Violent word used in metaphor')
+
+        # legend = fig.legend(loc='upper center',
+        #                     labels=['MSNBC', 'CNN', 'Fox News'],
+        #                     bbox_to_anchor=(-0.05, -0.065), ncol=3,
+        #                     title='Average daily instances for network')
+
+        # plt.tight_layout()
+        fig.subplots_adjust(bottom=-0.5)
+
+        if save_path is not None:
+            fig.savefig(save_path,
+                        bbox_extra_artists=(legend,), bbox_inches='tight')
+            plt.close()
+
+    return fwc_excited, fwc_ground
+
 
 if __name__ == '__main__':
 
@@ -295,7 +411,7 @@ if __name__ == '__main__':
 
     # make fits
     icname = 'Viomet Sep-Nov 2016'
-    a = get_analyzer(icname)
+    a = get_project_data_frame(icname)
     dr = pd.date_range('2016-09-01', '2016-11-30', freq='D')
 
     fitall = fit_all_networks(a, dr, icname)

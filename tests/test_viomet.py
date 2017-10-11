@@ -9,6 +9,7 @@ from projects.common.analysis import (
     _count_by_start_localtime, daily_metaphor_counts, shows_per_date,
     daily_frequency, SubjectObjectData
 )
+from projects.common import facet_word_count
 from projects.viomet.analysis import PartitionInfo, partition_sums
 
 
@@ -575,3 +576,47 @@ def test_subject_object_counts_per_partition():
     )
 
     pd.testing.assert_frame_equal(obj_trump.data_frame, expected_obj_trump_df)
+
+
+def test_facet_word_counts():
+
+    pn = [
+        'Tracy Morgans news hour', 'Dingbat Alley', 'iCry Sad News Time',
+        'Digging Turnips with Ethan Land', 'Good morning, middle america!'
+    ]
+    n = ['MSNBCW', 'CNNW', 'FOXNEWSW']
+    fw = ['kill', 'murder', 'punch', 'attack']
+    so = ['trump', 'clinton', 'obama', 'media']
+    input_df = _gen_test_input(pn, n, fw, so)
+
+    columns = pd.Index(
+        ['MSNBCW', 'CNNW', 'FOXNEWSW'], dtype='object', name='network'
+    )
+
+    fw_index = pd.Index(fw, name='facet_word')
+
+    expected_facet_word_counts_by_network = pd.DataFrame(
+        index=fw_index, columns=columns, dtype=np.float64, data=[
+            (2, 1, 2),
+            (1, 0, 1),
+            (1, 1, 2),
+            (1, 0, 1),
+        ]
+    )
+
+    facet_word_counts_by_network = facet_word_count(input_df, fw)
+
+    pd.testing.assert_frame_equal(expected_facet_word_counts_by_network,
+                                  facet_word_counts_by_network)
+
+    expected_facet_word_counts_total = pd.Series(
+        index=fw_index, data=[5, 2, 4, 2]
+    )
+
+    facet_word_count_total = facet_word_count(
+        input_df, fw, by_network=False
+    )
+
+    pd.testing.assert_series_equal(
+        expected_facet_word_counts_total, facet_word_count_total
+    )

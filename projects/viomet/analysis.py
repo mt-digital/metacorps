@@ -101,7 +101,7 @@ def add_phases(df,
             # phase.append(1)
             phase.append('ground')
 
-        elif date1 <= d and d < date2:
+        elif date1 <= d and d <= date2:
             # phase.append(2)
             phase.append('elevated')
 
