@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pandas as pd
 
 from collections import OrderedDict, Counter
 from copy import deepcopy
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
 from .export_project import ProjectExporter
 from app.models import IatvCorpus
@@ -38,6 +40,11 @@ def get_project_data_frame(project_name):
     '''
     if type(project_name) is int:
         project_name = str('Viomet Sep-Nov ' + project_name)
+
+    is_url = lambda s: urlparse(project_name).hostname is not None
+    if is_url(project_name) or os.path.exists(project_name):
+        ret = pd.read_csv(project_name, na_values='')
+        return ret
 
     return ProjectExporter(project_name).export_dataframe()
 
@@ -306,7 +313,7 @@ class SubjectObjectData:
             configuration.
         '''
 
-        pre = analyzer_df
+        pre = analyzer_df.fillna('')
 
         def _match_checker(df, subj, obj, subj_contains, obj_contains):
             '''
@@ -339,8 +346,10 @@ class SubjectObjectData:
 
             return ret
 
+        chooser = _match_checker(pre, subj, obj, subj_contains, obj_contains)
+
         pre = pre[
-            _match_checker(pre, subj, obj, subj_contains, obj_contains)
+            chooser
         ]
 
         # then do counts or frequencies as normal, since you have just

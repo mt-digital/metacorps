@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -10,7 +11,8 @@ from matplotlib import gridspec
 from app.models import IatvCorpus
 from projects.common.analysis import (
     shows_per_date, get_project_data_frame,
-    daily_metaphor_counts, daily_frequency, facet_word_count
+    daily_metaphor_counts, daily_frequency, facet_word_count,
+    SubjectObjectData
 )
 from projects.viomet.analysis import partition_AICs, PartitionInfo
 
@@ -290,22 +292,12 @@ def by_weekday_figure(analyzer, date_index, iatv_corpus_name,
         plt.savefig(save_path)
 
 
-def by_facet_word(df, partition_infos, facet_words=FACET_WORDS,
-                  font_scale=1.15, plot=False, save_path=None):
+def _get_excited_chooser(df, partition_infos):
     '''
-    Arguments:
-        df (pandas.DataFrame): dataframe of annotations of metaphorical
-            violence generated using IatvCorpus data; previously Analyzer.df
-        partition_infos (dict): dictionary of
-            projects.viomet.analysis.PartitionInfo instances, keyed by the
-            network they represent e.g. 'FOXNEWSW'
+    Boolean row selection indexer from project data frame obtained using
+    get_project_data_frame from projects.common
+    '''
 
-    Returns:
-        None
-    '''
-    sns.axes_style("darkgrid")
-    sns.set(font_scale=font_scale)
-    # create choosers to select only excited or ground rows from df
     msnbc_pi = partition_infos['MSNBCW']
     msnbc_excited_chooser = (df.network == 'MSNBCW') & \
         (
@@ -329,6 +321,28 @@ def by_facet_word(df, partition_infos, facet_words=FACET_WORDS,
 
     excited_chooser = \
         fox_excited_chooser | msnbc_excited_chooser | cnn_excited_chooser
+
+    return excited_chooser
+
+
+def by_facet_word(df, partition_infos, facet_words=FACET_WORDS,
+                  font_scale=1.15, plot=False, save_path=None):
+    '''
+    Arguments:
+        df (pandas.DataFrame): dataframe of annotations of metaphorical
+            violence generated using IatvCorpus data; previously Analyzer.df
+        partition_infos (dict): dictionary of
+            projects.viomet.analysis.PartitionInfo instances, keyed by the
+            network they represent e.g. 'FOXNEWSW'
+
+    Returns:
+        None
+    '''
+    sns.axes_style("darkgrid")
+    sns.set(font_scale=font_scale)
+    # create choosers to select only excited or ground rows from df
+
+    excited_chooser = _get_excited_chooser(df, partition_infos)
 
     excited_df = df[excited_chooser]
     ground_df = df[~excited_chooser]
@@ -404,6 +418,87 @@ def by_facet_word(df, partition_infos, facet_words=FACET_WORDS,
 
     return fwc_excited, fwc_ground
 
+
+def subject_object_analysis(df,
+                            subj_obj=[
+                                ('Donald Trump', None),
+                                ('Hillary Clinton', None),
+                                ('Donald Trump', 'Hillary Clinton'),
+                                ('Hillary Clinton', 'Donald Trump'),
+                                (None, 'Donald Trump'),
+                                (None, 'Hillary Clinton')
+                            ],
+                            resample_window='1W', font_scale=1.15, plot=False,
+                            save_dir='./'):
+
+    # XXX First thing to be done is the weekly timeseries; do this sort of
+    # XXX selection and aggregation after full-length subj/obj dfs are made
+    # excited_chooser = _get_excited_chooser(df, partition_infos)
+
+    # excited_df = df[excited_chooser]
+    # ground_df = df[~excited_chooser]
+
+    # d = dict([
+    #     (subj_obj[0],
+    #      SubjectObjectData.from_analyzer_df(
+    #          df, subj=subj_obj[0][0], obj=subj_obj[0][1]
+    #      )
+    #      )
+    # ])
+    sns.set(font_scale=font_scale)
+    d = dict([
+
+        (so,
+
+         SubjectObjectData.from_analyzer_df(
+                 df, subj=so[0], obj=so[1]
+             ).data_frame.fillna(
+                 0.0
+             ).resample(resample_window).sum()
+         )
+
+        for so in subj_obj
+    ])
+
+    if plot:
+
+        ylims = [(-0.2, 25), (-0.2, 25), (-0.2, 12), (-0.2, 12),
+                 (-0.2, 15), (-0.2, 15)]
+
+        for idx, so_pair in enumerate(subj_obj):
+
+            subject = so_pair[0] if so_pair[0] is not None else 'All'
+            object_ = so_pair[1] if so_pair[1] is not None else 'All'
+
+            df = d[so_pair]
+            df.columns = ['MSNBC', 'CNN', 'Fox News']
+            _plot_subj_obj(subject, object_, df,
+                           ylim=ylims[idx], ax=None, save_dir=save_dir)
+
+    return d  # , fig
+
+
+def _plot_subj_obj(subj, obj, df, legend=True,
+                   save_dir='/Users/mt/Desktop/', ylim=(-0.2, 25), ax=None):
+
+    if ax is None:
+        df.plot(legend=legend, figsize=(7.5, 5), marker='s', lw=3, ms=8)
+
+        plt.title('Subject: {}, Object: {}'.format(subj, obj))
+        plt.ylabel('Weekly counts')
+        plt.ylim(ylim)
+
+        file_name = (subj + '-' + obj).replace(' ', '-')
+        plt.savefig(
+            os.path.join(save_dir, '{}.pdf'.format(file_name))
+        )
+
+    else:
+        df.plot(ax=ax, legend=legend)
+        ax.set_title('Subject: {}, Object: {}'.format(subj, obj))
+        ax.set_ylabel('Weekly counts')
+
+        ax.set_ylim(ylim)
 
 if __name__ == '__main__':
 
