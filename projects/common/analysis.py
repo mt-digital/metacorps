@@ -43,7 +43,8 @@ def get_project_data_frame(project_name):
 
     is_url = lambda s: urlparse(project_name).hostname is not None
     if is_url(project_name) or os.path.exists(project_name):
-        ret = pd.read_csv(project_name, na_values='')
+        ret = pd.read_csv(project_name, na_values='',
+                          parse_dates=['start_localtime'])
         return ret
 
     return ProjectExporter(project_name).export_dataframe()

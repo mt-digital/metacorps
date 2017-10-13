@@ -63,7 +63,7 @@ DEFAULT_PARTITION_DATES = (datetime(2016, 10, 1), datetime(2016, 10, 31))
 
 
 def by_network_frequency_figure(frequency_df,
-                                dr=pd.date_range(
+                                date_range=pd.date_range(
                                     '2016-09-01', '2016-11-30', freq='D'
                                 ),
                                 iatv_corpus_name=None,
@@ -85,7 +85,7 @@ def by_network_frequency_figure(frequency_df,
         if freq:
 
             network_freq = daily_frequency(
-                df, dr, iatv_corpus_name, by=['network']
+                df, date_range, iatv_corpus_name, by=['network']
             )
 
             network_freq.plot(style='o')
@@ -93,7 +93,7 @@ def by_network_frequency_figure(frequency_df,
         else:
 
             full_df = daily_metaphor_counts(
-                df, ['network'], dr
+                df, ['network'], date_range
             )[['MSNBCW', 'CNNW', 'FOXNEWSW']]
 
             full_df.plot(style='o')
@@ -108,7 +108,7 @@ def by_network_frequency_figure(frequency_df,
             networks = ['MSNBCW', 'CNNW', 'FOXNEWSW']
 
             network_freq = daily_frequency(
-                df, dr, iatv_corpus_name, by=['network']
+                df, date_range, iatv_corpus_name, by=['network']
             )
 
             ax = network_freq[networks].plot(
@@ -121,14 +121,14 @@ def by_network_frequency_figure(frequency_df,
 
                 day_td = timedelta(seconds=60)
 
-                d0 = dr[0]
+                d0 = date_range[0]
                 d1 = pinfo.partition_date_1 - day_td
 
                 d2 = pinfo.partition_date_1
                 d3 = pinfo.partition_date_2
 
                 d4 = pinfo.partition_date_2 + day_td
-                d5 = dr[-1]
+                d5 = date_range[-1]
 
                 fg = pinfo.f_ground
                 fe = pinfo.f_excited
@@ -171,7 +171,7 @@ def by_network_frequency_figure(frequency_df,
 
 
 # TODO iatv_corpus_name should be something associated with an Analyzer
-def fit_all_networks(df, dr, iatv_corpus_name, by_network=True):
+def fit_all_networks(df, date_range, iatv_corpus_name, by_network=True):
 
     ic = IatvCorpus.objects(name=iatv_corpus_name)[0]
 
@@ -182,7 +182,7 @@ def fit_all_networks(df, dr, iatv_corpus_name, by_network=True):
                 'If by_network=True, must provide iatv_corpus_name'
             )
 
-        network_freq = daily_frequency(df, dr, ic, by=['network'])
+        network_freq = daily_frequency(df, date_range, ic, by=['network'])
 
         results = {}
         for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']:
@@ -207,7 +207,7 @@ def fit_all_networks(df, dr, iatv_corpus_name, by_network=True):
 
     else:
 
-        all_freq = daily_frequency(df, dr, ic).reset_index().dropna()
+        all_freq = daily_frequency(df, date_range, ic).reset_index().dropna()
 
         all_freq.columns = ['date', 'freq']
 
