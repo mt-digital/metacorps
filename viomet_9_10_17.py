@@ -175,6 +175,11 @@ def fit_all_networks(df, date_range, iatv_corpus_name, by_network=True):
 
     ic = IatvCorpus.objects(name=iatv_corpus_name)[0]
 
+    # candidate start & final dates of excited state
+    split = len(date_range) // 2
+    candidate_start_dates = date_range[15:split]
+    candidate_final_dates = date_range[split:-15]
+
     if by_network:
 
         if iatv_corpus_name is None:
@@ -195,6 +200,8 @@ def fit_all_networks(df, date_range, iatv_corpus_name, by_network=True):
             single_network.columns = ['date', 'freq']
 
             all_fits = partition_AICs(single_network,
+                                      first_dates=candidate_start_dates,
+                                      second_dates=candidate_final_dates,
                                       model_formula='freq ~ state')
 
             best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]
@@ -211,7 +218,10 @@ def fit_all_networks(df, date_range, iatv_corpus_name, by_network=True):
 
         all_freq.columns = ['date', 'freq']
 
-        all_fits = partition_AICs(all_freq, model_formula='freq ~ state')
+        all_fits = partition_AICs(all_freq,
+                                  first_dates=candidate_start_dates,
+                                  second_dates=candidate_final_dates,
+                                  model_formula='freq ~ state')
 
         best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]
 
@@ -428,6 +438,8 @@ def subject_object_analysis(df,
                                 (None, 'Donald Trump'),
                                 (None, 'Hillary Clinton')
                             ],
+                            date_range=None,
+                            ylims=None,
                             resample_window='1W', font_scale=1.15, plot=False,
                             save_dir='./'):
 
@@ -451,7 +463,7 @@ def subject_object_analysis(df,
         (so,
 
          SubjectObjectData.from_analyzer_df(
-                 df, subj=so[0], obj=so[1]
+                 df, subj=so[0], obj=so[1], date_range=date_range
              ).data_frame.fillna(
                  0.0
              ).resample(resample_window).sum()
@@ -461,9 +473,9 @@ def subject_object_analysis(df,
     ])
 
     if plot:
-
-        ylims = [(-0.2, 25), (-0.2, 25), (-0.2, 12), (-0.2, 12),
-                 (-0.2, 15), (-0.2, 15)]
+        if ylims is None:
+            ylims = [(-0.2, 25), (-0.2, 25), (-0.2, 12), (-0.2, 12),
+                     (-0.2, 15), (-0.2, 15)]
 
         for idx, so_pair in enumerate(subj_obj):
 

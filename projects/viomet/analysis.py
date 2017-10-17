@@ -49,11 +49,11 @@ def partition_AICs(df,
     generates a dataframe with the AIC of each partition date.
     '''
     d = {
-            'first_date': [],
-            'second_date': [],
-            'AIC': [],
-            'coef': [],
-            'model': []
+        'first_date': [],
+        'second_date': [],
+        'AIC': [],
+        'coef': [],
+        'model': []
     }
 
     for fd in first_dates:

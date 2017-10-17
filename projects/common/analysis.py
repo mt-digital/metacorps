@@ -300,9 +300,7 @@ class SubjectObjectData:
     @classmethod
     def from_analyzer_df(cls, analyzer_df, subj=None, obj=None,
                          subj_contains=True, obj_contains=True,
-                         date_range=pd.date_range(
-                             '2016-09-01', '2016-11-30', freq='D'
-                         )):
+                         date_range=None):
         '''
         Given an Analyzer instance's DataFrame, calculate the frequency of
         metaphorical violence with a given subject, object,
@@ -313,6 +311,9 @@ class SubjectObjectData:
             will be filled with by-network counts of the specified subj/obj
             configuration.
         '''
+
+        if date_range is None:
+            pd.date_range('2016-09-01', '2016-11-30', freq='D')
 
         pre = analyzer_df.fillna('')
 
