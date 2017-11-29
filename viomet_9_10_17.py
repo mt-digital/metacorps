@@ -171,14 +171,15 @@ def by_network_frequency_figure(frequency_df,
 
 
 # TODO iatv_corpus_name should be something associated with an Analyzer
-def fit_all_networks(df, date_range, iatv_corpus_name, by_network=True):
+def fit_all_networks(df, date_range, iatv_corpus_name,
+                     by_network=True, poisson=False, verbose=False):
 
     ic = IatvCorpus.objects(name=iatv_corpus_name)[0]
 
     # candidate start & final dates of excited state
     split = len(date_range) // 2
     candidate_start_dates = date_range[15:split]
-    candidate_final_dates = date_range[split:-15]
+    candidate_final_dates = date_range[split+1:-15]
 
     if by_network:
 
@@ -202,11 +203,17 @@ def fit_all_networks(df, date_range, iatv_corpus_name, by_network=True):
             all_fits = partition_AICs(single_network,
                                       first_dates=candidate_start_dates,
                                       second_dates=candidate_final_dates,
-                                      model_formula='freq ~ state')
+                                      model_formula='freq ~ state',
+                                      poisson=poisson,
+                                      verbose=verbose)
 
             best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]
 
             pinfo = PartitionInfo.from_fit(best_fit)
+
+            if poisson:
+                pinfo.f_ground /= 2.0
+                pinfo.f_excited /= 2.0
 
             results.update({network: (pinfo, best_fit)})
 
@@ -266,9 +273,6 @@ def by_weekday_figure(analyzer, date_index, iatv_corpus_name,
 
         rev_idx = list(df_mean.index)
         rev_idx.reverse()
-
-        # import ipdb
-        # ipdb.set_trace()
 
         # xerr = list(df_std[0]/2.0)
         # xerr.reverse()
@@ -474,7 +478,7 @@ def subject_object_analysis(df,
 
     if plot:
         if ylims is None:
-            ylims = [(-0.2, 25), (-0.2, 25), (-0.2, 12), (-0.2, 12),
+            ylims = [(-0.2, 18), (-0.2, 18), (-0.2, 18), (-0.2, 18),
                      (-0.2, 15), (-0.2, 15)]
 
         for idx, so_pair in enumerate(subj_obj):
