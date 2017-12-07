@@ -5,3 +5,6 @@ app/conf/default.cfg
 *.pyc
 app/conf/*.cfg
 notebooks/Figures
+*.pickle
+*.csv
+*.tex

@@ -164,7 +164,7 @@ def partition_info_table(partition_infos):
     index_keys = [('MSNBC', 'MSNBCW'),
                   ('CNN', 'CNNW'),
                   ('Fox News', 'FOXNEWSW')]
-    columns = ['T_1e', 'T_Ne', 'fg', 'fe', 'r']
+    columns = ['$T_1e$', '$T_Ne$', '$f^g$', '$f^e$', '$f^e/f^g$']
     data = []
     for ik in index_keys:
         key = ik[1]
@@ -176,12 +176,12 @@ def partition_info_table(partition_infos):
                      pi.f_excited / pi.f_ground])
 
     index = [ik[0] for ik in index_keys]
-    return pd.DataFrame(data=data, index=index, columns=columns).to_latex(
-            formatters={'fg': '{:,.2f}'.format,
-                        'fe': '{:,.2f}'.format,
-                        'r': '{:,.2f}'.format
-                        }
-            )
+    return pd.DataFrame(data=data, index=index, columns=columns)  # .to_latex(
+            # formatters={'fg': '{:,.2f}'.format,
+            #             'fe': '{:,.2f}'.format,
+            #             'r': '{:,.2f}'.format
+            #             }
+            # )
 
 
 def by_network_subj_obj_table(viomet_df,
@@ -248,8 +248,6 @@ def by_network_subj_obj_table(viomet_df,
         totals = sum_subj_g + sum_obj_g + sum_subj_e + sum_obj_e
 
         network = networks[idx]
-        import ipdb
-        ipdb.set_trace()
         for subject in subjects:
             df.loc["Subject=" + subject, network] = [
                 freq_subj_g[subject], freq_subj_e[subject], totals[subject]
@@ -414,7 +412,7 @@ def viomet_analysis_setup(year=2012):
     partition_infos = {network: fits[network][0]
                        for network in networks}
 
-    return viomet_df, partition_infos
+    return viomet_df, date_range, partition_infos
 
 
 def fit_all_networks(df, date_range, iatv_corpus_name,
