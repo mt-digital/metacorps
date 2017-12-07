@@ -9,12 +9,17 @@ import pandas as pd
 
 from collections import Counter
 from datetime import datetime
-from rpy2.robjects.packages import importr
+from functools import reduce
 
+from rpy2.robjects.packages import importr
 from rpy2 import robjects as ro
 from rpy2.robjects import pandas2ri
 
-from projects.common import daily_metaphor_counts
+from app.models import IatvCorpus
+from projects.common import (
+    daily_frequency, daily_metaphor_counts, get_project_data_frame
+)
+
 pandas2ri.activate()
 R = ro.r
 
@@ -179,6 +184,87 @@ def partition_info_table(partition_infos):
             )
 
 
+def by_network_subj_obj_table(viomet_df,
+                              date_range,
+                              partition_infos,
+                              subjects=['Barack Obama', 'Mitt Romney'],
+                              objects=['Barack Obama', 'Mitt Romney']):
+    '''
+
+    '''
+    networks = ['MSNBC', 'CNN', 'Fox News']
+    columns = ['fg', 'fe', 'total']
+
+    # index_tuples = [(net, word) for net in networks for word in words]
+    subj_objs = ["Subject=" + subj for subj in subjects] \
+        + ["Object=" + obj for obj in objects]
+    index_tuples = [(so, net) for so in subj_objs for net in networks]
+
+    index = pd.MultiIndex.from_tuples(
+        index_tuples, names=['Violent Word', 'Network']
+    )
+
+    df = pd.DataFrame(index=index, columns=columns, data=0.0)
+
+    # Next two blocks support more than two subjects or objects.
+    subject_rows = reduce(
+        lambda x, y: (viomet_df.subjects == x) | (viomet_df.subjects == y),
+        subjects
+    )
+    object_rows = reduce(
+        lambda x, y: (viomet_df.objects == x) | (viomet_df.objects == y),
+        objects
+    )
+    subject_df = viomet_df[subject_rows]
+    object_df = viomet_df[object_rows]
+
+    subject_counts_df = daily_metaphor_counts(
+        subject_df, date_range, by=['network', 'subjects'],
+    )
+    object_counts_df = daily_metaphor_counts(
+        object_df, date_range, by=['network', 'objects']
+    )
+
+    for idx, network_id in enumerate(['MSNBCW', 'CNNW', 'FOXNEWSW']):
+        # Ground state data.
+        sum_subj_g, n_subj_g = _get_ground(
+            subject_counts_df, network_id, partition_infos
+        )
+        sum_obj_g, n_obj_g = _get_ground(
+            object_counts_df, network_id, partition_infos
+        )
+        # Excited state data.
+        sum_subj_e, n_subj_e = _get_excited(
+            subject_counts_df, network_id, partition_infos
+        )
+        sum_obj_e, n_obj_e = _get_excited(
+            object_counts_df, network_id, partition_infos
+        )
+        freq_subj_g = sum_subj_g / n_subj_g
+        freq_obj_g = sum_obj_g / n_obj_g
+        freq_subj_e = sum_subj_e / n_subj_e
+        freq_obj_e = sum_obj_e / n_obj_e
+
+        totals = sum_subj_g + sum_obj_g + sum_subj_e + sum_obj_e
+
+        network = networks[idx]
+        import ipdb
+        ipdb.set_trace()
+        for subject in subjects:
+            df.loc["Subject=" + subject, network] = [
+                freq_subj_g[subject], freq_subj_e[subject], totals[subject]
+            ]
+        for object_ in objects:
+            df.loc["Object=" + object_, network] = [
+                freq_obj_g[object_], freq_obj_e[object_], totals[object_]
+            ]
+
+        fancy_columns = ['$f^g$', '$f^e$', 'total']
+        df.columns = fancy_columns
+
+    return df
+
+
 def by_network_word_table(viomet_df,
                           date_range,
                           partition_infos,
@@ -193,38 +279,11 @@ def by_network_word_table(viomet_df,
     # index_tuples = [(net, word) for net in networks for word in words]
     index_tuples = [(word, net) for word in words for net in networks]
 
-    # index = pd.MultiIndex.from_tuples(
-    #     index_tuples, names=['Network', 'Violent Word']
-    # )
     index = pd.MultiIndex.from_tuples(
         index_tuples, names=['Violent Word', 'Network']
     )
 
     df = pd.DataFrame(index=index, columns=columns, data=0.0)
-
-    def _get_ground(counts_df, netid, partition_infos, words):
-        cdf = counts_df
-        net_pi = partition_infos[netid]
-        ground_dates = ((cdf.index < net_pi.partition_date_1) |
-                        (cdf.index > net_pi.partition_date_2))
-
-        ret = cdf[ground_dates][netid].sum()
-        n_ground = Counter(ground_dates)[True]
-
-        # Only take the indices of interest; these are 1D.
-        return ret.loc[words], n_ground
-
-    def _get_excited(counts_df, netid, partition_infos, words):
-        cdf = counts_df
-        net_pi = partition_infos[netid]
-
-        excited_dates = ((cdf.index >= net_pi.partition_date_1) &
-                         (cdf.index <= net_pi.partition_date_2))
-
-        ret = cdf[excited_dates][netid].sum()
-        n_excited = Counter(excited_dates)[True]
-        # Only take the indices of interest; these are 1D.
-        return ret.loc[words], n_excited
 
     counts_df = daily_metaphor_counts(
         viomet_df, date_range, by=['network', 'facet_word']
@@ -232,8 +291,12 @@ def by_network_word_table(viomet_df,
 
     for idx, netid in enumerate(['MSNBCW', 'CNNW', 'FOXNEWSW']):
 
-        sum_g, n_g = _get_ground(counts_df, netid, partition_infos, words)
-        sum_e, n_e = _get_excited(counts_df, netid, partition_infos, words)
+        sum_g, n_g = _get_ground(
+            counts_df, netid, partition_infos, words=words
+        )
+        sum_e, n_e = _get_excited(
+            counts_df, netid, partition_infos, words=words
+        )
 
         freq_g = sum_g / n_g
         freq_e = sum_e / n_e
@@ -249,6 +312,40 @@ def by_network_word_table(viomet_df,
     df.columns = fancy_columns
 
     return df
+
+
+def _get_ground(counts_df, network_id, partition_infos,
+                words=None, subj_objs=None):
+        cdf = counts_df
+        net_pi = partition_infos[network_id]
+        ground_dates = ((cdf.index < net_pi.partition_date_1) |
+                        (cdf.index > net_pi.partition_date_2))
+
+        ret = cdf[ground_dates][network_id].sum()
+        n_ground = Counter(ground_dates)[True]
+
+        if words is not None:
+            # Only take the indices of interest; these are 1D.
+            return ret.loc[words], n_ground
+        else:
+            return ret, n_ground
+
+
+def _get_excited(counts_df, network_id, partition_infos,
+                 words=None, subj_objs=None):
+    cdf = counts_df
+    net_pi = partition_infos[network_id]
+
+    excited_dates = ((cdf.index >= net_pi.partition_date_1) &
+                     (cdf.index <= net_pi.partition_date_2))
+
+    ret = cdf[excited_dates][network_id].sum()
+    n_excited = Counter(excited_dates)[True]
+    if words is not None:
+        # Only take the indices of interest; these are 1D.
+        return ret.loc[words], n_excited
+    else:
+        return ret, n_excited
 
 
 def partition_sums(counts_df, partition_infos):
@@ -293,3 +390,92 @@ def partition_sums(counts_df, partition_infos):
         ret.loc[network] = [ground, excited]
 
     return ret
+
+
+def viomet_analysis_setup(year=2012):
+    '''
+    Returns:
+        viomet_df and partition_infos
+    '''
+    if year == 2012:
+        iatv_corpus_name = 'Viomet Sep-Nov 2012'
+        metaphors_url = 'http://metacorps.io/static/data/' + \
+                        'viomet-2012-snapshot-project-df.csv'
+        date_range = pd.date_range('2012-9-1', '2012-11-30', freq='D')
+    if year == 2016:
+        iatv_corpus_name = 'Viomet Sep-Nov 2016'
+        metaphors_url = 'http://metacorps.io/static/data/' + \
+                        'viomet-2016-snapshot-project-df.csv'
+        date_range = pd.date_range('2016-9-1', '2016-11-30', freq='D')
+
+    viomet_df = get_project_data_frame(metaphors_url)
+    fits = fit_all_networks(viomet_df, date_range, iatv_corpus_name)
+    networks = ['MSNBCW', 'CNNW', 'FOXNEWSW']
+    partition_infos = {network: fits[network][0]
+                       for network in networks}
+
+    return viomet_df, partition_infos
+
+
+def fit_all_networks(df, date_range, iatv_corpus_name,
+                     by_network=True, poisson=False, verbose=False):
+
+    ic = IatvCorpus.objects(name=iatv_corpus_name)[0]
+
+    # candidate start & final dates of excited state
+    split = len(date_range) // 2
+    candidate_start_dates = date_range[15:split]
+    candidate_final_dates = date_range[split+1:-15]
+
+    if by_network:
+
+        if iatv_corpus_name is None:
+            raise RuntimeError(
+                'If by_network=True, must provide iatv_corpus_name'
+            )
+
+        network_freq = daily_frequency(df, date_range, ic, by=['network'])
+
+        results = {}
+        for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']:
+
+            # fit the model to find \tau^*_1, \tau^*_2, and \phi
+            single_network = \
+                network_freq[network].to_frame().reset_index().dropna()
+
+            # this is ugly but required to match partition_AICs at this time
+            single_network.columns = ['date', 'freq']
+
+            all_fits = partition_AICs(single_network,
+                                      first_dates=candidate_start_dates,
+                                      second_dates=candidate_final_dates,
+                                      model_formula='freq ~ state',
+                                      poisson=poisson,
+                                      verbose=verbose)
+
+            best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]
+
+            pinfo = PartitionInfo.from_fit(best_fit)
+
+            if poisson:
+                pinfo.f_ground /= 2.0
+                pinfo.f_excited /= 2.0
+
+            results.update({network: (pinfo, best_fit)})
+
+        return results
+
+    else:
+
+        all_freq = daily_frequency(df, date_range, ic).reset_index().dropna()
+
+        all_freq.columns = ['date', 'freq']
+
+        all_fits = partition_AICs(all_freq,
+                                  first_dates=candidate_start_dates,
+                                  second_dates=candidate_final_dates,
+                                  model_formula='freq ~ state')
+
+        best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]
+
+        return best_fit

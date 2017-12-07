@@ -7,6 +7,60 @@ will be made more general so diverse sources can be used. If you would like
 to analyze [Internet Archive Cable News](http://archive.org/tv/details) data,
 you can use my [iatv](http://github.com/mtpain/iatv) python package.
 
+## Building figures for the metaphorical violence paper
+
+The most immediate goal of Metacorps is to provide a functional prototype
+that powers rapid interactive identification and annotation of metaphor. 
+More specifically, we are identifying and annotating metaphorical violence on
+the cable news stations CNN, MSNBC, and Fox News. Part of the value of Metacorps
+is as a full-lifecycle data pipeline, including the processing phase. For this,
+we have a projects directory containing `common` and `viomet` subdirectories.
+Each of these subdirectories have files `analysis.py` and `vis.py`, which 
+provide functionality matching their names. Below are some notes on how
+to use these to produce the publication-ready plots. It needs cleanup.
+
+```python
+import pandas as pd
+
+from projects.common import get_project_data_frame
+from projects.viomet.analysis import by_network_table
+from viomet_9_10_17 import fit_all_networks
+
+metaphors_url = \
+    'http://metacorps.io/static/data/viomet-2012-snapshot-project-df.csv'
+viomet_df = get_project_data_frame(metaphors_url)
+date_range = pd.date_range('2012-9-1', '2012-11-30', freq='D')
+
+iatv_corpus_name = 'Viomet Sep-Nov 2012'
+network_fits = fit_all_networks(
+        viomet_df, date_range=date_range, iatv_corpus_name, verbose=False
+    )
+partition_infos = {
+    network: fit_2012[network][0] 
+    for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']
+}
+
+fit_2012 = fit_all_networks(
+        viomet_df, date_range, iatv_corpus_name, verbose=False
+    )
+
+# Generate Table 2.
+bnw_tbl_df = by_network_word_table(viomet_df, date_range, partition_infos)
+print(bnw_tbl_df)
+# Out[42]:
+#                          $f^g$     $f^e$  total
+# Violent Word Network
+# hit          MSNBC     0.483333  0.833333   54.0
+#             CNN       0.289474  0.428571   28.0
+#             Fox News  0.303030  0.416667   30.0
+# beat         MSNBC     0.566667  0.266667   42.0
+#             CNN       0.381579  0.142857   31.0
+#             Fox News  0.378788  0.166667   29.0
+# attack       MSNBC     0.300000  0.466667   32.0
+#             CNN       0.500000  1.357143   57.0
+#             Fox News  0.803030  0.375000   62.0
+```
+
 ## Run the app!
 
 [metacorps.io](http://metacorps.io) is hosted and available for all. For 
