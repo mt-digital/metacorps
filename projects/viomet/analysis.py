@@ -160,28 +160,38 @@ class PartitionInfo:
         return cls(partition_date_1, partition_date_2, f_ground, f_excited)
 
 
-def partition_info_table(partition_infos):
+def partition_info_table(viomet_df,
+                         date_range,
+                         partition_infos):
+    '''
+    TODO
+    '''
     index_keys = [('MSNBC', 'MSNBCW'),
                   ('CNN', 'CNNW'),
                   ('Fox News', 'FOXNEWSW')]
-    columns = ['$T_1e$', '$T_Ne$', '$f^g$', '$f^e$', '$f^e/f^g$']
+
+    columns = ['$T_1e$', '$T_Ne$', '$f^g$', '$f^e$', '\% change', 'total uses']
+
+    counts_df = daily_metaphor_counts(
+        viomet_df, date_range, by=['network']
+    )
+
     data = []
     for ik in index_keys:
         key = ik[1]
         pi = partition_infos[key]
-        data.append([pi.partition_date_1,
-                     pi.partition_date_2,
-                     pi.f_ground,
-                     pi.f_excited,
-                     pi.f_excited / pi.f_ground])
+        data.append([
+            pi.partition_date_1,
+            pi.partition_date_2,
+            pi.f_ground,
+            pi.f_excited,
+            100 * ((pi.f_excited - pi.f_ground) / pi.f_ground),
+            counts_df[key].sum()
+        ])
 
     index = [ik[0] for ik in index_keys]
-    return pd.DataFrame(data=data, index=index, columns=columns)  # .to_latex(
-            # formatters={'fg': '{:,.2f}'.format,
-            #             'fe': '{:,.2f}'.format,
-            #             'r': '{:,.2f}'.format
-            #             }
-            # )
+
+    return pd.DataFrame(data=data, index=index, columns=columns)
 
 
 def by_network_subj_obj_table(viomet_df,
@@ -190,10 +200,10 @@ def by_network_subj_obj_table(viomet_df,
                               subjects=['Barack Obama', 'Mitt Romney'],
                               objects=['Barack Obama', 'Mitt Romney']):
     '''
-
+    TODO
     '''
     networks = ['MSNBC', 'CNN', 'Fox News']
-    columns = ['fg', 'fe', 'total']
+    columns = ['fg', 'fe', '\% change', 'total uses']
 
     # index_tuples = [(net, word) for net in networks for word in words]
     subj_objs = ["Subject=" + subj for subj in subjects] \
@@ -201,7 +211,7 @@ def by_network_subj_obj_table(viomet_df,
     index_tuples = [(so, net) for so in subj_objs for net in networks]
 
     index = pd.MultiIndex.from_tuples(
-        index_tuples, names=['Violent Word', 'Network']
+        index_tuples, names=['Subject/Object', 'Network']
     )
 
     df = pd.DataFrame(index=index, columns=columns, data=0.0)
@@ -245,19 +255,29 @@ def by_network_subj_obj_table(viomet_df,
         freq_subj_e = sum_subj_e / n_subj_e
         freq_obj_e = sum_obj_e / n_obj_e
 
+        pct_diff_subj = 100.0 * ((freq_subj_e - freq_subj_g) / 2.0)
+        pct_diff_obj = 100.0 * ((freq_obj_e - freq_obj_g) / 2.0)
+
         totals = sum_subj_g + sum_obj_g + sum_subj_e + sum_obj_e
 
         network = networks[idx]
         for subject in subjects:
             df.loc["Subject=" + subject, network] = [
-                freq_subj_g[subject], freq_subj_e[subject], totals[subject]
-            ]
-        for object_ in objects:
-            df.loc["Object=" + object_, network] = [
-                freq_obj_g[object_], freq_obj_e[object_], totals[object_]
+                freq_subj_g[subject],
+                freq_subj_e[subject],
+                pct_diff_subj[subject],
+                totals[subject]
             ]
 
-        fancy_columns = ['$f^g$', '$f^e$', 'total']
+        for object_ in objects:
+            df.loc["Object=" + object_, network] = [
+                freq_obj_g[object_],
+                freq_obj_e[object_],
+                pct_diff_obj[object_],
+                totals[object_]
+            ]
+
+        fancy_columns = ['$f^g$', '$f^e$', '\% change', 'total uses']
         df.columns = fancy_columns
 
     return df
@@ -272,7 +292,7 @@ def by_network_word_table(viomet_df,
     Second table in paper
     '''
     networks = ['MSNBC', 'CNN', 'Fox News']
-    columns = ['fg', 'fe', 'total']
+    columns = ['fg', 'fe', 'pct_change', 'total uses']
 
     # index_tuples = [(net, word) for net in networks for word in words]
     index_tuples = [(word, net) for word in words for net in networks]
@@ -299,14 +319,17 @@ def by_network_word_table(viomet_df,
         freq_g = sum_g / n_g
         freq_e = sum_e / n_e
 
+        pct_diff = 100.0 * ((freq_e - freq_g) / 2.0)
+
         totals = sum_g + sum_e
 
         network = networks[idx]
         for word in words:
-            # df.loc[network, word] = [freq_g[word], freq_e[word], totals[word]]
-            df.loc[word, network] = [freq_g[word], freq_e[word], totals[word]]
+            df.loc[word, network] = [
+                freq_g[word], freq_e[word], pct_diff[word], totals[word]
+            ]
 
-    fancy_columns = ['$f^g$', '$f^e$', 'total']
+    fancy_columns = ['$f^g$', '$f^e$', '\% change', 'total uses']
     df.columns = fancy_columns
 
     return df
