@@ -39,9 +39,9 @@ def get_project_data_frame(project_name):
             with DataFrame representation included as an attribute
     '''
     if type(project_name) is int:
-        project_name = str('Viomet Sep-Nov ' + project_name)
+        project_name = str('Viomet Sep-Nov ' + str(project_name))
 
-    is_url = lambda s: urlparse(project_name).hostname is not None
+    def is_url(s): return urlparse(project_name).hostname is not None
     if is_url(project_name) or os.path.exists(project_name):
         ret = pd.read_csv(project_name, na_values='',
                           parse_dates=['start_localtime'])

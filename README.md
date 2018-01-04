@@ -21,10 +21,26 @@ to use these to produce the publication-ready plots. It needs cleanup.
 
 The script [`make_tables.py`](/make_tables.py) creates and saves
 LaTeX tables 1-3 as found in the paper. Just run `python make_tables.py`.
+That script attempts to save the model fits for each year to file as
+`fits{year}.pickle`, e.g. `fits2012.pickle`. Be careful to remove this 
+checkpoint if you have updated the data.
 
-**The file downloaded from 
-http://metacorps.io/static/data/viomet-2012-snapshot-project-df.csv was made
-how?? Figure that out and make another one for 2016.**
+This script fetches the data from pre-made csv's hosted on the metacorps
+site. These CSV's are created using the same `get_project_data_frame`
+function used to load the data from the web in `make_tables.py`. We simply
+pass the year of interest and the current version of `get_project_data_frame`
+will build the Metacorps project name for lookup in MongoDB. A future version
+will not have this convenience, one will just have to pass the full
+project name. Projects can have specialized functions that do automatic name
+generation on top of this base functionality. Another upcoming change
+will be addition of the ability to export all rows, both metaphor and not,
+for review by the general public in csv format.
+
+```
+viomet_2016 = get_project_data_frame(2016)
+viomet_2016.to_csv('viomet-2016-snapshot-project-df.csv', 
+                   header=True, index=False, na_rep=None)
+```
 
 **Another thing to explain or update: frequencies are calculated using both
 the CSV data and MongoDB data. How does this work? A CSV of the episode
