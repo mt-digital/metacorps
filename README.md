@@ -19,6 +19,9 @@ Each of these subdirectories have files `analysis.py` and `vis.py`, which
 provide functionality matching their names. Below are some notes on how
 to use these to produce the publication-ready plots. It needs cleanup.
 
+The script [`make_tables.py`](/make_tables.py) creates and saves
+LaTeX tables 1-3 as found in the paper. Just run `python make_tables.py`.
+
 **The file downloaded from 
 http://metacorps.io/static/data/viomet-2012-snapshot-project-df.csv was made
 how?? Figure that out and make another one for 2016.**
@@ -31,10 +34,6 @@ Note this will also remove need for config file.**
 **Separate viomet project from Metacorps? Yes, at least partly. It's OK to
 make extensive use of Metacorps, should have separate releases of Mc, iatv,
 and reproduce-viomet.**
-
-The script [`make_tables.py`](/make_tables.py) creates and saves
-LaTeX tables 1-3 as found in the paper. Just run `python make_tables.py`.
-
 
 ## Run the app!
 
