@@ -42,6 +42,9 @@ viomet_2016.to_csv('viomet-2016-snapshot-project-df.csv',
                    header=True, index=False, na_rep=None)
 ```
 
+There are Jupyter Notebooks in the [`notebooks`](/notebooks) directory. 
+They need to be updated at this time.
+
 **Another thing to explain or update: frequencies are calculated using both
 the CSV data and MongoDB data. How does this work? A CSV of the episode
 counts with all relevant metadata should be made for final Jan 15 release.

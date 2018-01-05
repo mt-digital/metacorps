@@ -258,7 +258,8 @@ def by_network_subj_obj_table(viomet_df,
         pct_diff_subj = 100.0 * ((freq_subj_e - freq_subj_g) / 2.0)
         pct_diff_obj = 100.0 * ((freq_obj_e - freq_obj_g) / 2.0)
 
-        totals = sum_subj_g + sum_obj_g + sum_subj_e + sum_obj_e
+        totals_subj = sum_subj_g + sum_subj_e
+        totals_obj = sum_obj_g + sum_obj_e
 
         network = networks[idx]
         for subject in subjects:
@@ -266,7 +267,7 @@ def by_network_subj_obj_table(viomet_df,
                 freq_subj_g[subject],
                 freq_subj_e[subject],
                 pct_diff_subj[subject],
-                totals[subject]
+                totals_subj[subject]
             ]
 
         for object_ in objects:
@@ -274,7 +275,7 @@ def by_network_subj_obj_table(viomet_df,
                 freq_obj_g[object_],
                 freq_obj_e[object_],
                 pct_diff_obj[object_],
-                totals[object_]
+                totals_obj[object_]
             ]
 
         fancy_columns = ['$f^g$', '$f^e$', '\% change', 'total uses']
