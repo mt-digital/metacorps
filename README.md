@@ -45,6 +45,14 @@ viomet_2016.to_csv('viomet-2016-snapshot-project-df.csv',
 There are Jupyter Notebooks in the [`notebooks`](/notebooks) directory. 
 They need to be updated at this time.
 
+To create Tables 1-3 and Figure 2 of the paper, run
+
+```
+python make_viomet_pubdata.py 
+cp Table{1,2,3}-{2012,2016}.tex path/to/latex/tables
+cp ModelFits-{2012,2016}.tex path/to/latex/figures
+```
+
 **Another thing to explain or update: frequencies are calculated using both
 the CSV data and MongoDB data. How does this work? A CSV of the episode
 counts with all relevant metadata should be made for final Jan 15 release.

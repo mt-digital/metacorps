@@ -111,13 +111,6 @@ def by_network_frequency_figure(
                     legend=True, label=network_formatted[net_idx]
                 )
 
-            # ax.xaxis.set_major_formatter(
-            #     pltdates.DateFormatter('%B 2016')
-            # )
-            # ax.xaxis.set_major_locator(
-            #     pltdates.MonthLocator()
-            # )
-            # plt.minorticks_off()
             ax.xaxis.set_minor_formatter(pltdates.DateFormatter('%-d'))
             ax.xaxis.set_minor_locator(pltdates.DayLocator(bymonthday=(1, 15)))
 
