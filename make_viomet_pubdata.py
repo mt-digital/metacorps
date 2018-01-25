@@ -3,7 +3,7 @@ Script to build network model fits figure and the three tables from our
 publication on metaphorical violence on cable news.
 
 Author: Matthew A. Turner
-Date: 2018-01-05
+Date: 2018-01-24
 '''
 import pickle
 import os
@@ -13,7 +13,7 @@ import pandas as pd
 from projects.common import get_project_data_frame
 from projects.viomet.analysis import (
     by_network_subj_obj_table, by_network_word_table,
-    fit_all_networks, partition_info_table
+    fit_all_networks, partition_info_table, model_fits_table
 )
 from projects.viomet.vis import by_network_frequency_figure
 
@@ -50,16 +50,16 @@ for year in YEARS:
     if os.path.exists(fits_path):
         print('loading model fits for {} from disk'.format(year))
         with open(fits_path, 'br') as f:
-            fits = pickle.load(f)
+            network_fits = pickle.load(f)
     else:
         print('fitting model for {} and saving to disk'.format(year))
-        fits = fit_all_networks(viomet_df, date_range, iatv_corpus_name)
+        network_fits = fit_all_networks(viomet_df, date_range, iatv_corpus_name)
         with open(fits_path, 'wb') as f:
-            pickle.dump(fits, f)
+            pickle.dump(network_fits, f)
 
     # Partitions are of time into the ground and excited states.
     partition_infos = {
-        network: fits[network][0]
+        network: network_fits[network][0]
         for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']
     }
 
@@ -100,3 +100,13 @@ for year in YEARS:
     print(net_subobj)
     with open('Table3-{}.tex'.format(year), 'w') as f:
         net_subobj.to_latex(f, formatters=FORMATTERS, escape=False)
+
+    network_fits_tables = model_fits_table(
+        viomet_df, date_range, network_fits, top_n=20)
+    networks = ['MSNBCW', 'CNNW', 'FOXNEWSW']
+
+    for network in networks:
+        fits_table = network_fits_tables[network]
+        fname = 'SupplementTables/Table1-{}-{}.tex'.format(year, network)
+        with open(fname, 'w') as f:
+            fits_table.to_latex(f, index=False, formatters=FORMATTERS, escape=False)

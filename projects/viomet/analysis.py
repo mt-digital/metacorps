@@ -32,6 +32,10 @@ extractAIC = importr('stats').extractAIC
 coef = importr('stats').coef
 
 
+def get_pvalue(model):
+    return importr('base').summary(model).rx2('coefficients')[-1]
+
+
 DEFAULT_FIRST_DATES = [
     datetime(2016, 9, d) for d in range(20, 31)
 ] + [
@@ -47,8 +51,7 @@ DEFAULT_SECOND_DATES = [
 
 
 def partition_AICs(df,
-                   first_dates=DEFAULT_FIRST_DATES,
-                   second_dates=DEFAULT_SECOND_DATES,
+                   candidate_excited_date_pairs=[()],
                    model_formula='count ~ phase + network + facet + (1|date)',
                    verbose=False,
                    poisson=False
@@ -59,51 +62,59 @@ def partition_AICs(df,
     '''
     d = {
         'first_date': [],
-        'second_date': [],
+        'last_date': [],
         'AIC': [],
         'coef': [],
         'model': []
     }
 
-    for fd in first_dates:
-        for sd in second_dates:
+    for first_date, last_date in candidate_excited_date_pairs:
 
-            d['first_date'].append(fd)
-            d['second_date'].append(sd)
+        phase_df = add_phases(df, first_date, last_date)
 
-            if verbose:
-                print('Calculating for d1={} & d2={}'.format(fd, sd))
+        # If there are not two states (ground and excited), don't model.
+        # This happens when neither first or last is in the df.date column
+        # or if the excited state takes up all available dates, e.g. 9-1 to
+        # 11-29 and there is no data for 11-30.
+        if (len(phase_df.state.unique()) < 2
+                or np.sum(phase_df.state == 'excited') < 10):
 
-            phase_df = add_phases(df, fd, sd)
+            continue
 
-            if poisson:
-                # Hacky, but need to transform to integer for poisson and
-                # there are at most two shows on a day, so the fraction part
-                # of frequency is 1/2 or 0.
-                phase_df.freq *= 2
-                model = lm(
-                    model_formula,
-                    family='poisson',
-                    data=phase_df
-                )
-                d['coef'].append(list(coef(model)))
-            else:
-                model = lm(
-                    model_formula,
-                    data=phase_df
-                )
-                d['coef'].append(list(coef(model)))
+        d['first_date'].append(first_date)
+        d['last_date'].append(last_date)
 
-            d['AIC'].append(extractAIC(model)[1])
-            d['model'].append(model)
+        if verbose:
+            print(
+                'Calculating for d1={} & d2={}'.format(first_date, last_date)
+            )
+
+        if poisson:
+            # Hacky, but need to transform to integer for poisson and
+            # there are at most two shows on a day, so the fraction part
+            # of frequency is 1/2 or 0.
+            phase_df.freq *= 2
+            model = lm(
+                model_formula,
+                family='poisson',
+                data=phase_df
+            )
+            d['coef'].append(list(coef(model)))
+        else:
+            model = lm(
+                model_formula,
+                data=phase_df
+            )
+            d['coef'].append(list(coef(model)))
+
+        d['AIC'].append(extractAIC(model)[1])
+        d['model'].append(model)
 
     return pd.DataFrame(d)
 
 
-def add_phases(df,
-               date1=datetime(2016, 9, 26),
-               date2=datetime(2016, 10, 20)
-               ):
+def add_phases(df, date1=datetime(2016, 9, 26),
+               date2=datetime(2016, 10, 20)):
     '''
     Create a dataframe with a new 'state' column
     '''
@@ -111,13 +122,14 @@ def add_phases(df,
     phase = []
     ret = df.copy()
 
+    # XXX super confusing with all the "date"s floating around.
     for i, d in enumerate([d for d in df.date]):
 
-        if date1 > d:
+        if date1.date() > d.date():
             phase.append('ground')
 
-        elif date1 <= d and d <= date2:
-            phase.append('elevated')
+        elif date1.date() <= d.date() and d.date() <= date2.date():
+            phase.append('excited')
 
         else:
             phase.append('ground')
@@ -148,13 +160,13 @@ class PartitionInfo:
     def from_fit(cls, fit):
 
         partition_date_1 = fit.first_date
-        partition_date_2 = fit.second_date
+        partition_date_2 = fit.last_date
 
         # R model returns the excited state freq as intercept b/c alphabetical
         f_excited = fit.coef[0]
 
-        # the slope is the second coefficient; it will be negative if
-        # hypothesis is correct
+        # The slope is the second coefficient; it will be negative if
+        # hypothesis is correct.
         f_ground = f_excited + fit.coef[1]
 
         return cls(partition_date_1, partition_date_2, f_ground, f_excited)
@@ -170,7 +182,7 @@ def partition_info_table(viomet_df,
                   ('CNN', 'CNNW'),
                   ('Fox News', 'FOXNEWSW')]
 
-    columns = ['$T_1e$', '$T_Ne$', '$f^g$', '$f^e$', '\% change', 'total uses']
+    columns = ['$t_0^{(2)}$', '$t^{(2)}_{N^{(2)}}$', '$f^{(1)}$', '$f^{(2)}$', '\% change', 'total uses']
 
     counts_df = daily_metaphor_counts(
         viomet_df, date_range, by=['network']
@@ -192,6 +204,66 @@ def partition_info_table(viomet_df,
     index = [ik[0] for ik in index_keys]
 
     return pd.DataFrame(data=data, index=index, columns=columns)
+
+
+def model_fits_table(viomet_df, date_range, network_fits, top_n=10):
+    '''
+    Relative ikelihoods of null model vs the best dynamic model fit and
+    greater-AIC dynamic model fits vs the best dynamic model fit.
+
+    Arguments:
+        network_fits (dict): keyed by network, values are lists where the
+            last element in the list is the dataframe of alternate
+            start and end dates with AIC values of the associated
+            fitted model. TODO: improve network_fits setup; it's opaque,
+            each value of that dict is a list with three elements I think.
+        top_n (int): number of top-performing models by relative likelihood
+            to include in table.
+    '''
+
+    networks = ['MSNBCW', 'CNNW', 'FOXNEWSW']
+    ret = {}
+
+    for network in networks:
+        network_df = network_fits[network][-1]
+
+        # Need to extract minimum AIC as the best; likelihood relative to it.
+        low = network_df.AIC.min()
+        network_df.loc[:, 'rl'] = relative_likelihood(low, network_df.AIC)
+
+        # The least AIC min has a relative likelihood of 1.0; remove it.
+        # network_df = network_df[network_df.rl != 1.0]
+        network_df.sort_values('rl', ascending=False, inplace=True)
+
+        # If there are exact duplicates of relative likelihood it's due to
+        # there not being data between one of the candidate partition dates.
+        network_df.drop_duplicates(subset='rl', inplace=True)
+
+        network_df = network_df.iloc[:top_n]
+        network_df['pvalue'] = [
+            get_pvalue(model) for model in list(network_df.model)
+        ]
+
+        # Multiply by 100 to get percentage, with neg sign b/c excited
+        # treated as "less" than ground due to alpha ordering in R.
+        # c1 is the ``excited'' region frequency, which is really just the
+        # second region; c2 is ground frequency - excited frequency. Thus
+        # c1 + c2 = ground frequency.
+        network_df['\% change'] = [
+            -100.0 * (c2 / (c1 + c2)) for c1, c2 in network_df['coef']
+        ]
+
+        ret_df = network_df[
+            ['rl', 'first_date', 'last_date', '\% change', 'pvalue']
+        ]
+        ret_df.columns = [
+            'rel. lik.', '$t_0^{(2)}$', '$t^{(2)}_{N^{(2)}}$',
+            '\% change', '$P(<|t|)$'
+        ]
+
+        ret.update({network: ret_df})
+
+    return ret
 
 
 def by_network_subj_obj_table(viomet_df,
@@ -370,48 +442,44 @@ def _get_excited(counts_df, network_id, partition_infos,
         return ret, n_excited
 
 
-def partition_sums(counts_df, partition_infos):
-    '''
-    partition_infos should be a dictionary with 'MSNBCW', 'CNNW', 'FOXNEWSW',
-    and 'All' as keys, with a PartitionInfo instance for each.
-    '''
-    # if 'All' in partition_infos:
-    #     index = ['MSNBCW', 'CNNW', 'FOXNEWSW', 'All']
-    # else:
-    #     index = ['MSNBCW', 'CNNW', 'FOXNEWSW']
-    index = counts_df.columns
-    print(index)
+# XXX Not sure if this is still being used at all...remove? XXX
+# def partition_sums(counts_df, partition_infos):
+#     '''
+#     partition_infos should be a dictionary with 'MSNBCW', 'CNNW', 'FOXNEWSW',
+#     and 'All' as keys, with a PartitionInfo instance for each.
+#     '''
+#     index = counts_df.columns
 
-    index_len = len(index)
-    ret = pd.DataFrame(
-        index=index,
-        data=dict(
-            [('ground', np.zeros(index_len)), ('excited', np.zeros(index_len))]
-        )
-    )
-    ret = ret[['ground', 'excited']]
+#     index_len = len(index)
+#     ret = pd.DataFrame(
+#         index=index,
+#         data=dict(
+#             [('ground', np.zeros(index_len)), ('excited', np.zeros(index_len))]
+#         )
+#     )
+#     ret = ret[['ground', 'excited']]
 
-    cdf_index = counts_df.index
+#     cdf_index = counts_df.index
 
-    counts_df = counts_df.copy()
-    counts_df['All'] = counts_df.sum(axis=1)
+#     counts_df = counts_df.copy()
+#     counts_df['All'] = counts_df.sum(axis=1)
 
-    for network in ret.index:
+#     for network in ret.index:
 
-        pd1 = partition_infos[network].partition_date_1
-        pd2 = partition_infos[network].partition_date_2
+#         pd1 = partition_infos[network].partition_date_1
+#         pd2 = partition_infos[network].partition_date_2
 
-        ground = counts_df.loc[
-            (cdf_index < pd1) | (cdf_index > pd2), network
-        ].sum()
+#         ground = counts_df.loc[
+#             (cdf_index < pd1) | (cdf_index > pd2), network
+#         ].sum()
 
-        excited = counts_df.loc[
-            (cdf_index >= pd1) & (cdf_index <= pd2), network
-        ].sum()
+#         excited = counts_df.loc[
+#             (cdf_index >= pd1) & (cdf_index <= pd2), network
+#         ].sum()
 
-        ret.loc[network] = [ground, excited]
+#         ret.loc[network] = [ground, excited]
 
-    return ret
+#     return ret
 
 
 def viomet_analysis_setup(year=2012):
@@ -444,10 +512,14 @@ def fit_all_networks(df, date_range, iatv_corpus_name,
 
     ic = IatvCorpus.objects(name=iatv_corpus_name)[0]
 
-    # candidate start & final dates of excited state
-    split = len(date_range) // 2
-    candidate_start_dates = date_range[15:split]
-    candidate_final_dates = date_range[split+1:-15]
+    # The first date of date_range can't be the last excited state date.
+    last_excited_date_candidates = date_range[1:]
+
+    candidate_excited_date_pairs = [
+        (fd, ld)
+        for ld in last_excited_date_candidates
+        for fd in date_range[date_range < ld]
+    ]
 
     if by_network:
 
@@ -469,8 +541,7 @@ def fit_all_networks(df, date_range, iatv_corpus_name,
             single_network.columns = ['date', 'freq']
 
             all_fits = partition_AICs(single_network,
-                                      first_dates=candidate_start_dates,
-                                      second_dates=candidate_final_dates,
+                                      candidate_excited_date_pairs,
                                       model_formula='freq ~ state',
                                       poisson=poisson,
                                       verbose=verbose)
@@ -483,7 +554,7 @@ def fit_all_networks(df, date_range, iatv_corpus_name,
                 pinfo.f_ground /= 2.0
                 pinfo.f_excited /= 2.0
 
-            results.update({network: (pinfo, best_fit)})
+            results.update({network: (pinfo, best_fit, all_fits)})
 
         return results
 
@@ -494,8 +565,7 @@ def fit_all_networks(df, date_range, iatv_corpus_name,
         all_freq.columns = ['date', 'freq']
 
         all_fits = partition_AICs(all_freq,
-                                  first_dates=candidate_start_dates,
-                                  second_dates=candidate_final_dates,
+                                  candidate_excited_date_pairs,
                                   model_formula='freq ~ state')
 
         best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]

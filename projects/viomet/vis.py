@@ -10,10 +10,9 @@ import matplotlib.dates as pltdates
 import pandas as pd
 import seaborn as sns
 
-from datetime import date, timedelta
-from matplotlib import font_manager
+from datetime import date, datetime, timedelta
 
-# from fyr_analysis import relative_likelihood
+from .analysis import relative_likelihood
 
 from projects.common.analysis import (
     daily_frequency, daily_metaphor_counts
@@ -243,82 +242,96 @@ def plot_total_daily_usage(series, ma_period=5, lw=3, marker='o', ms=6,
 
 
 # FIGURE 2
-# def aic_heatmap(df, relative=False, lw=2, annot=True, lim_ticklabels=False,
-#                 title='', save_path=None):
-#     '''
-#     heatmap demonstrating relative likelihood of each model minimizing
-#     information loss
+def aic_heatmap(df, relative=False, lw=2, annot=True, lim_ticklabels=False,
+                title='', save_path=None):
+    '''
+    heatmap demonstrating relative likelihood of each model minimizing
+    information loss
 
-#     Arguements:
-#         df (pandas.DataFrame): data frame with the first and second
-#             partition dates and an AIC column if relative=False and a
-#             rl column if relative=True
-#         relative (bool): see above
+    Arguements:
+        df (pandas.DataFrame): data frame with the first and second
+            partition dates and an AIC column if relative=False and a
+            rl column if relative=True
+        relative (bool): see above
 
-#     Returns:
-#         (matplotlib.pyplot.Axes): Axes plotted to
-#     '''
-#     sns.set(font_scale=1.2)
+    Returns:
+        (matplotlib.pyplot.Axes): Axes plotted to
+    '''
+    sns.set(font_scale=1.2)
 
-#     cbar_kws = dict(label='Relative Likelihood, $\mathcal{L}_i$', size=16)
+    cbar_kws = dict(label='Relative Likelihood, $\mathcal{L}_i$', size=16)
 
-#     fig = plt.figure(figsize=(16, 9))
+    fig = plt.figure(figsize=(16, 9))
 
-#     if relative:
-#         val_col = 'rl'
-#         fmt = '.2f'
+    if relative:
+        val_col = 'rl'
+        fmt = '.2f'
 
-#         df_rel = df.copy()
-#         min_aic = df_rel.AIC.min()
+        df_rel = df.copy()
+        # min_aic = df_rel.AIC.min()
 
-#         df_rel = df_rel.rename(columns={'AIC': val_col})
-#         df_rel[val_col] = relative_likelihood(min_aic, df_rel[val_col])
+        # df_rel = df_rel.rename(columns={'AIC': val_col})
+        # df_rel[val_col] = relative_likelihood(min_aic, df_rel[val_col])
 
-#         if lim_ticklabels:
-#             ax = sns.heatmap(
-#                 df_rel.pivot('first_date', 'second_date', val_col),
-#                 annot=annot, fmt=fmt, linewidths=lw, xticklabels=5,
-#                 yticklabels=5
-#             )
+        if lim_ticklabels:
+            ax = sns.heatmap(
+                df_rel.pivot('first_date', 'last_date', val_col),
+                annot=annot, fmt=fmt, linewidths=lw, xticklabels=5,
+                yticklabels=5
+            )
 
-#         else:
-#             ax = sns.heatmap(
-#                 df_rel.pivot('first_date', 'second_date', val_col),
-#                 annot=annot, fmt=fmt, linewidths=lw
-#             )
+        else:
+            ax = sns.heatmap(
+                df_rel.pivot('first_date', 'last_date', val_col),
+                annot=annot, fmt=fmt, linewidths=lw
+            )
 
-#         cbar = plt.gcf().axes[-1]  # .colorbar(df_rel[val_col].values)
-#         cbar.tick_params(labelsize=14)
-#         cbar.set_title('Relative Likelihood, $\mathcal{L}_i$\n',
-#                        size=18, loc='left')
+        cbar = plt.gcf().axes[-1]  # .colorbar(df_rel[val_col].values)
+        cbar.tick_params(labelsize=14)
+        cbar.set_title('Relative Likelihood, $\mathcal{L}_i$\n',
+                       size=18, loc='left')
 
-#     else:
-#         fmt = '1.0f'
+    else:
+        fmt = '1.0f'
 
-#         if lim_ticklabels:
-#             ax = sns.heatmap(
-#                 df_rel.pivot('first_date', 'second_date', val_col),
-#                 annot=annot, fmt=fmt, linewidths=lw, xticklabels=5,
-#                 yticklabels=5, cbar_kws=cbar_kws
-#             )
+        if lim_ticklabels:
+            ax = sns.heatmap(
+                df_rel.pivot('first_date', 'last_date', val_col),
+                annot=annot, fmt=fmt, linewidths=lw, xticklabels=5,
+                yticklabels=5, cbar_kws=cbar_kws
+            )
 
-#         else:
-#             ax = sns.heatmap(
-#                 df_rel.pivot('first_date', 'second_date', val_col),
-#                 annot=annot, fmt=fmt, linewidths=lw, cbar_kws=cbar_kws
-#             )
+        else:
+            ax = sns.heatmap(
+                df_rel.pivot('first_date', 'last_date', val_col),
+                annot=annot, fmt=fmt, linewidths=lw, cbar_kws=cbar_kws
+            )
 
-#     ax.set_ylabel('Date frequency increased', size=20)
-#     ax.set_xlabel('Date frequency returned to normal', size=20)
-#     ax.set_yticklabels(ax.get_yticklabels(), rotation=0, size=15)
-#     ax.set_xticklabels(ax.get_xticklabels(), rotation=-30, ha='left', size=15)
+    ax.set_ylabel('Date frequency increased', size=20)
+    ax.set_xlabel('Date frequency returned to normal', size=20)
 
-#     ax.invert_yaxis()
-#     plt.title(title, size=22)
-#     plt.tight_layout()
+    yt_labels = df_rel.first_date.dt.strftime('%m-%d').iloc[
+        [int(yt) for yt in ax.get_yticks()]
+    ]
+    ax.set_yticklabels(yt_labels, rotation=0, size=15)
 
-#     if save_path is not None:
-#         fig.savefig(save_path)
-#         plt.close()
+    dates = df_rel.last_date.unique()[[int(xt) for xt in ax.get_xticks()]]
+    import ipdb
+    ipdb.set_trace()
+    xt_labels = [
+        dt.astype(datetime).strftime('%m-%d') for dt in dates
+    ]
+    import ipdb
+    ipdb.set_trace()
+    ax.set_xticklabels(xt_labels, rotation=-30, ha='left', size=15)
 
-#     return ax
+    ax.invert_yaxis()
+    plt.title(title, size=22)
+    plt.tight_layout()
+
+    if save_path is not None:
+        fig.savefig(save_path)
+        plt.close()
+
+    return ax
+
