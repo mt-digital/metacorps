@@ -128,6 +128,7 @@ def by_network_frequency_figure(
                 fig.savefig(save_path)
                 plt.close()
 
+
 # FIGURE 1
 def plot_daily_usage(df, ma_period=7, lw=3, marker='o', ms=10, xlab='Date',
                      ylab='Figurative uses',
@@ -334,4 +335,3 @@ def aic_heatmap(df, relative=False, lw=2, annot=True, lim_ticklabels=False,
         plt.close()
 
     return ax
-

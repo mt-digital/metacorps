@@ -182,7 +182,8 @@ def partition_info_table(viomet_df,
                   ('CNN', 'CNNW'),
                   ('Fox News', 'FOXNEWSW')]
 
-    columns = ['$t_0^{(2)}$', '$t^{(2)}_{N^{(2)}}$', '$f^{(1)}$', '$f^{(2)}$', '\% change', 'total uses']
+    columns = ['$t_0^{(2)}$', '$t^{(2)}_{N^{(2)}}$', '$f^{(1)}$',
+               '$f^{(2)}$', 'reactivity', 'total uses']
 
     counts_df = daily_metaphor_counts(
         viomet_df, date_range, by=['network']
@@ -197,13 +198,65 @@ def partition_info_table(viomet_df,
             pi.partition_date_2,
             pi.f_ground,
             pi.f_excited,
-            100 * ((pi.f_excited - pi.f_ground) / pi.f_ground),
+            ((pi.f_excited - pi.f_ground) / pi.f_ground),
             counts_df[key].sum()
         ])
 
     index = [ik[0] for ik in index_keys]
 
     return pd.DataFrame(data=data, index=index, columns=columns)
+
+
+def by_network_word_table(viomet_df,
+                          date_range,
+                          partition_infos,
+                          words=['hit', 'beat', 'attack']
+                          ):
+    '''
+    Second table in paper
+    '''
+    networks = ['MSNBC', 'CNN', 'Fox News']
+    columns = ['fg', 'fe', 'reactivity', 'total uses']
+
+    # index_tuples = [(net, word) for net in networks for word in words]
+    index_tuples = [(word, net) for word in words for net in networks]
+
+    index = pd.MultiIndex.from_tuples(
+        index_tuples, names=['Violent Word', 'Network']
+    )
+
+    df = pd.DataFrame(index=index, columns=columns, data=0.0)
+
+    counts_df = daily_metaphor_counts(
+        viomet_df, date_range, by=['network', 'facet_word']
+    )
+
+    for idx, netid in enumerate(['MSNBCW', 'CNNW', 'FOXNEWSW']):
+
+        sum_g, n_g = _get_ground(
+            counts_df, netid, partition_infos, words=words
+        )
+        sum_e, n_e = _get_excited(
+            counts_df, netid, partition_infos, words=words
+        )
+
+        freq_g = sum_g / n_g
+        freq_e = sum_e / n_e
+
+        reactivity = ((freq_e - freq_g) / freq_g)
+
+        totals = sum_g + sum_e
+
+        network = networks[idx]
+        for word in words:
+            df.loc[word, network] = [
+                freq_g[word], freq_e[word], reactivity[word], totals[word]
+            ]
+
+    fancy_columns = ['$f^{(1)}$', '$f^{(2)}$', 'reactivity', 'total uses']
+    df.columns = fancy_columns
+
+    return df
 
 
 def model_fits_table(viomet_df, date_range, network_fits, top_n=10):
@@ -244,21 +297,21 @@ def model_fits_table(viomet_df, date_range, network_fits, top_n=10):
             get_pvalue(model) for model in list(network_df.model)
         ]
 
-        # Multiply by 100 to get percentage, with neg sign b/c excited
+        # Multiply by -1.0 b/c excited
         # treated as "less" than ground due to alpha ordering in R.
         # c1 is the ``excited'' region frequency, which is really just the
         # second region; c2 is ground frequency - excited frequency. Thus
         # c1 + c2 = ground frequency.
-        network_df['\% change'] = [
-            -100.0 * (c2 / (c1 + c2)) for c1, c2 in network_df['coef']
+        network_df['reactivity'] = [
+            -1.0 * (c2 / (c1 + c2)) for c1, c2 in network_df['coef']
         ]
 
         ret_df = network_df[
-            ['rl', 'first_date', 'last_date', '\% change', 'pvalue']
+            ['rl', 'first_date', 'last_date', 'reactivity', 'pvalue']
         ]
         ret_df.columns = [
             'rel. lik.', '$t_0^{(2)}$', '$t^{(2)}_{N^{(2)}}$',
-            '\% change', '$P(<|t|)$'
+            'reactivity', '$P(<|t|)$'
         ]
 
         ret.update({network: ret_df})
@@ -275,7 +328,7 @@ def by_network_subj_obj_table(viomet_df,
     TODO
     '''
     networks = ['MSNBC', 'CNN', 'Fox News']
-    columns = ['fg', 'fe', '\% change', 'total uses']
+    columns = ['fg', 'fe', 'reactivity', 'total uses']
 
     # index_tuples = [(net, word) for net in networks for word in words]
     subj_objs = ["Subject=" + subj for subj in subjects] \
@@ -327,8 +380,8 @@ def by_network_subj_obj_table(viomet_df,
         freq_subj_e = sum_subj_e / n_subj_e
         freq_obj_e = sum_obj_e / n_obj_e
 
-        pct_diff_subj = 100.0 * ((freq_subj_e - freq_subj_g) / 2.0)
-        pct_diff_obj = 100.0 * ((freq_obj_e - freq_obj_g) / 2.0)
+        reactivity_diff_subj = ((freq_subj_e - freq_subj_g) / 2.0)
+        reactivity_diff_obj = ((freq_obj_e - freq_obj_g) / 2.0)
 
         totals_subj = sum_subj_g + sum_subj_e
         totals_obj = sum_obj_g + sum_obj_e
@@ -338,7 +391,7 @@ def by_network_subj_obj_table(viomet_df,
             df.loc["Subject=" + subject, network] = [
                 freq_subj_g[subject],
                 freq_subj_e[subject],
-                pct_diff_subj[subject],
+                reactivity_diff_subj[subject],
                 totals_subj[subject]
             ]
 
@@ -346,64 +399,12 @@ def by_network_subj_obj_table(viomet_df,
             df.loc["Object=" + object_, network] = [
                 freq_obj_g[object_],
                 freq_obj_e[object_],
-                pct_diff_obj[object_],
+                reactivity_diff_obj[object_],
                 totals_obj[object_]
             ]
 
-        fancy_columns = ['$f^g$', '$f^e$', '\% change', 'total uses']
+        fancy_columns = ['$f^{(1)}$', '$f^{(2)}$', 'reactivity', 'total uses']
         df.columns = fancy_columns
-
-    return df
-
-
-def by_network_word_table(viomet_df,
-                          date_range,
-                          partition_infos,
-                          words=['hit', 'beat', 'attack']
-                          ):
-    '''
-    Second table in paper
-    '''
-    networks = ['MSNBC', 'CNN', 'Fox News']
-    columns = ['fg', 'fe', 'pct_change', 'total uses']
-
-    # index_tuples = [(net, word) for net in networks for word in words]
-    index_tuples = [(word, net) for word in words for net in networks]
-
-    index = pd.MultiIndex.from_tuples(
-        index_tuples, names=['Violent Word', 'Network']
-    )
-
-    df = pd.DataFrame(index=index, columns=columns, data=0.0)
-
-    counts_df = daily_metaphor_counts(
-        viomet_df, date_range, by=['network', 'facet_word']
-    )
-
-    for idx, netid in enumerate(['MSNBCW', 'CNNW', 'FOXNEWSW']):
-
-        sum_g, n_g = _get_ground(
-            counts_df, netid, partition_infos, words=words
-        )
-        sum_e, n_e = _get_excited(
-            counts_df, netid, partition_infos, words=words
-        )
-
-        freq_g = sum_g / n_g
-        freq_e = sum_e / n_e
-
-        pct_diff = 100.0 * ((freq_e - freq_g) / 2.0)
-
-        totals = sum_g + sum_e
-
-        network = networks[idx]
-        for word in words:
-            df.loc[word, network] = [
-                freq_g[word], freq_e[word], pct_diff[word], totals[word]
-            ]
-
-    fancy_columns = ['$f^g$', '$f^e$', '\% change', 'total uses']
-    df.columns = fancy_columns
 
     return df
 
@@ -412,8 +413,8 @@ def _get_ground(counts_df, network_id, partition_infos,
                 words=None, subj_objs=None):
         cdf = counts_df
         net_pi = partition_infos[network_id]
-        ground_dates = ((cdf.index < net_pi.partition_date_1) |
-                        (cdf.index > net_pi.partition_date_2))
+        ground_dates = ((cdf.index < net_pi.partition_date_1.date()) |
+                        (cdf.index > net_pi.partition_date_2.date()))
 
         ret = cdf[ground_dates][network_id].sum()
         n_ground = Counter(ground_dates)[True]
@@ -430,8 +431,8 @@ def _get_excited(counts_df, network_id, partition_infos,
     cdf = counts_df
     net_pi = partition_infos[network_id]
 
-    excited_dates = ((cdf.index >= net_pi.partition_date_1) &
-                     (cdf.index <= net_pi.partition_date_2))
+    excited_dates = ((cdf.index >= net_pi.partition_date_1.date()) &
+                     (cdf.index <= net_pi.partition_date_2.date()))
 
     ret = cdf[excited_dates][network_id].sum()
     n_excited = Counter(excited_dates)[True]
@@ -440,46 +441,6 @@ def _get_excited(counts_df, network_id, partition_infos,
         return ret.loc[words], n_excited
     else:
         return ret, n_excited
-
-
-# XXX Not sure if this is still being used at all...remove? XXX
-# def partition_sums(counts_df, partition_infos):
-#     '''
-#     partition_infos should be a dictionary with 'MSNBCW', 'CNNW', 'FOXNEWSW',
-#     and 'All' as keys, with a PartitionInfo instance for each.
-#     '''
-#     index = counts_df.columns
-
-#     index_len = len(index)
-#     ret = pd.DataFrame(
-#         index=index,
-#         data=dict(
-#             [('ground', np.zeros(index_len)), ('excited', np.zeros(index_len))]
-#         )
-#     )
-#     ret = ret[['ground', 'excited']]
-
-#     cdf_index = counts_df.index
-
-#     counts_df = counts_df.copy()
-#     counts_df['All'] = counts_df.sum(axis=1)
-
-#     for network in ret.index:
-
-#         pd1 = partition_infos[network].partition_date_1
-#         pd2 = partition_infos[network].partition_date_2
-
-#         ground = counts_df.loc[
-#             (cdf_index < pd1) | (cdf_index > pd2), network
-#         ].sum()
-
-#         excited = counts_df.loc[
-#             (cdf_index >= pd1) & (cdf_index <= pd2), network
-#         ].sum()
-
-#         ret.loc[network] = [ground, excited]
-
-#     return ret
 
 
 def viomet_analysis_setup(year=2012):
@@ -533,7 +494,6 @@ def fit_all_networks(df, date_range, iatv_corpus_name,
         results = {}
         for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']:
 
-            # fit the model to find \tau^*_1, \tau^*_2, and \phi
             single_network = \
                 network_freq[network].to_frame().reset_index().dropna()
 
@@ -546,8 +506,14 @@ def fit_all_networks(df, date_range, iatv_corpus_name,
                                       poisson=poisson,
                                       verbose=verbose)
 
+            # The first date of the second level state cannot be the first
+            # date in the dataset.
+            all_fits = all_fits[all_fits.first_date != datetime(2012, 9, 1)]
+
+            # The best fit is the one with the minimum AIC.
             best_fit = all_fits.iloc[all_fits['AIC'].idxmin()]
 
+            # PartitionInfo provides a data structure wrapper around data row.
             pinfo = PartitionInfo.from_fit(best_fit)
 
             if poisson:

@@ -235,25 +235,14 @@ def daily_metaphor_counts(df, date_index, by=None):
 
     counts = _count_by_start_localtime(df, column_list=by)
 
-    # add timedelta to get all hours of the last requested day
-    hourly_index = pd.date_range(
-        date_index[0], date_index[-1] + timedelta(1, -50), freq='H'
-    )
+    groupby_spec = [counts.start_localtime.dt.date, *counts[by]]
 
-    full_df = pd.DataFrame(index=hourly_index, columns=by + ['counts'],
-                           dtype=np.int32)
+    counts_gb = counts.groupby(groupby_spec).sum().reset_index()
 
-    # XXX git a good comment in here, wtf is going on
-    for r in counts.itertuples():
-        full_df.loc[r.start_localtime] = \
-            [r.__getattribute__(attr) for attr in by] + [r.counts]
+    ret = pd.pivot_table(counts_gb, index='start_localtime', values='counts',
+                         columns=by, aggfunc='sum').fillna(0)
 
-    full_df.counts = full_df.counts.fillna(0)
-
-    piv = pd.pivot_table(full_df, index=full_df.index, values='counts',
-                         columns=by, aggfunc=np.sum)
-
-    return piv.fillna(0).resample('D').sum()
+    return ret
 
 
 def daily_frequency(df, date_index, iatv_corpus, by=None):

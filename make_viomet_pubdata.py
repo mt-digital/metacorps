@@ -20,10 +20,11 @@ from projects.viomet.vis import by_network_frequency_figure
 YEARS = [2012, 2016]
 
 FORMATTERS = {
-    '$f^g$': '{:,.2f}'.format,
-    '$f^e$': '{:,.2f}'.format,
-    'totals': lambda n: '{:, d}'.format(int(n)),
-    '\% change': '{:,.1f}'.format
+    '$f^{(1)}$': '{:,.2f}'.format,
+    '$f^{(2)}$': '{:,.2f}'.format,
+    'total uses': lambda n: '{:d}'.format(int(n)),
+    '\% change': '{:,.1f}'.format,
+    'reactivity': '{:,.2f}'.format
 }
 
 for year in YEARS:
@@ -40,6 +41,10 @@ for year in YEARS:
 
     # Load csv into pandas DataFrame and set up the date range for given year.
     viomet_df = get_project_data_frame(metaphors_url)
+    # Only considering attack, hit, and beat.
+    viomet_df = viomet_df[
+        viomet_df['facet_word'].isin(['hit', 'attack', 'beat'])
+    ]
     date_range = pd.date_range(
         str(year) + '-9-1', str(year) + '-11-30', freq='D'
     )
@@ -53,17 +58,21 @@ for year in YEARS:
             network_fits = pickle.load(f)
     else:
         print('fitting model for {} and saving to disk'.format(year))
-        network_fits = fit_all_networks(viomet_df, date_range, iatv_corpus_name)
+        network_fits = fit_all_networks(
+            viomet_df, date_range, iatv_corpus_name
+        )
         with open(fits_path, 'wb') as f:
             pickle.dump(network_fits, f)
 
     # Partitions are of time into the ground and excited states.
+    print('getting partition infos')
     partition_infos = {
         network: network_fits[network][0]
         for network in ['MSNBCW', 'CNNW', 'FOXNEWSW']
     }
 
     # Plot the three model fits (Figure 2).
+    print('making frequency figure by network')
     by_network_frequency_figure(
         viomet_df, date_range=date_range,
         iatv_corpus_name=iatv_corpus_name,
@@ -102,11 +111,14 @@ for year in YEARS:
         net_subobj.to_latex(f, formatters=FORMATTERS, escape=False)
 
     network_fits_tables = model_fits_table(
-        viomet_df, date_range, network_fits, top_n=20)
+        viomet_df, date_range, network_fits, top_n=10
+    )
     networks = ['MSNBCW', 'CNNW', 'FOXNEWSW']
 
     for network in networks:
         fits_table = network_fits_tables[network]
         fname = 'SupplementTables/Table1-{}-{}.tex'.format(year, network)
         with open(fname, 'w') as f:
-            fits_table.to_latex(f, index=False, formatters=FORMATTERS, escape=False)
+            fits_table.to_latex(
+                f, index=False, formatters=FORMATTERS, escape=False
+            )
