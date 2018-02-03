@@ -74,6 +74,6 @@ setup(
     author='Matthew Turner',
     author_email='maturner01@gmail.com',
     install_requires=required_packages,
-    include_package_data=True,
+    data_files=['app/conf/default.cfg'],
     packages=['projects', 'projects.common', 'projects.viomet', 'app']
 )
