@@ -43,7 +43,6 @@ required_packages = [
     'Pygments==2.2.0',
     'pymongo==3.4.0',
     'pyparsing==2.2.0',
-    'PyQt5==5.9',
     'python-dateutil==2.6.1',
     'pytz==2017.3',
     'pyzmq==16.0.2',
