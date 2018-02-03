@@ -74,5 +74,5 @@ setup(
     author='Matthew Turner',
     author_email='maturner01@gmail.com',
     install_requires=required_packages,
-    packages=['projects', 'app']
+    packages=['projects', 'projects.common', 'projects.viomet', 'app']
 )
