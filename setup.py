@@ -73,5 +73,6 @@ setup(
     description='Web app for managing and annotating metaphor data',
     author='Matthew Turner',
     author_email='maturner01@gmail.com',
-    install_requires=required_packages
+    install_requires=required_packages,
+    packages=['projects', 'app']
 )
